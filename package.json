@@ -1,0 +1,69 @@
+{
+    "name": "nodets-leancloud",
+    "version": "0.4.0",
+    "description": "Node.js Back-end project scaffold based on Koa, TypeScript & LeanCloud",
+    "author": "shiy2008@gmail.com",
+    "private": true,
+    "main": "dist/index.js",
+    "engines": {
+        "node": "^12.0.0"
+    },
+    "dependencies": {
+        "class-transformer": "^0.2.3",
+        "class-validator": "0.11.0",
+        "kcors": "^2.2.2",
+        "koa": "^2.11.0",
+        "koa-bodyparser": "^4.2.1",
+        "koa-logger": "^3.2.1",
+        "koa-multer": "^1.0.2",
+        "koa-router": "^7.4.0",
+        "leancloud-storage": "^3.15.0",
+        "leanengine": "^3.5.0",
+        "reflect-metadata": "^0.1.13",
+        "routing-controllers": "^0.8.0"
+    },
+    "devDependencies": {
+        "@types/koa": "^2.11.0",
+        "@types/koa-bodyparser": "^4.3.0",
+        "@types/koa-logger": "^3.1.1",
+        "@types/koa-multer": "^1.0.0",
+        "@types/koa-router": "^7.0.42",
+        "@typescript-eslint/eslint-plugin": "^2.14.0",
+        "@typescript-eslint/parser": "^2.14.0",
+        "eslint": "^6.8.0",
+        "husky": "^3.1.0",
+        "lint-staged": "^9.5.0",
+        "nodemon": "^2.0.2",
+        "prettier": "^1.19.1",
+        "ts-node": "^8.5.4",
+        "typescript": "^3.7.4"
+    },
+    "prettier": {
+        "singleQuote": true,
+        "tabWidth": 4
+    },
+    "lint-staged": {
+        "*.{md,json,yml}": [
+            "prettier --write",
+            "git add"
+        ],
+        "*.ts": [
+            "prettier --write",
+            "eslint --fix",
+            "git add"
+        ]
+    },
+    "scripts": {
+        "test": "lint-staged",
+        "dev": "nodemon --inspect --watch source/**/* -e ts --exec node -r ts-node/register source/",
+        "build": "tsc",
+        "deploy": "lint-staged  &&  tsc  &&  lean deploy",
+        "start": "node dist/"
+    },
+    "husky": {
+        "hooks": {
+            "pre-commit": "npm test",
+            "pre-push": "npm run build"
+        }
+    }
+}

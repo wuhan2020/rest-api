@@ -1,0 +1,8 @@
+.git/
+.DS_Store
+.avoscloud/
+.leancloud/
+node_modules/
+.travis.yml
+ReadMe.md
+tsconfig.json
