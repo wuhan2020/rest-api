@@ -11,6 +11,7 @@
 2. [角色管理](source/controller/Role.ts)
 3. [用户管理](source/controller/User.ts)
 4. [文件管理](source/controller/File.ts)
+5. [物资需求管理](source/controller/SuppliesRequirement.ts)
 
 ## 环境变量
 
