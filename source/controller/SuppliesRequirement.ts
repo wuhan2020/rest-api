@@ -32,7 +32,10 @@ export class RequirementController {
             .equalTo('hospital', hospital)
             .first();
 
-        if (requirement) throw new ForbiddenError();
+        if (requirement)
+            throw new ForbiddenError(
+                '同一医疗机构不能重复发布，请联系原发布者修改'
+            );
 
         const acl = new ACL();
 
@@ -54,7 +57,18 @@ export class RequirementController {
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
-        return queryPage(SuppliesRequirement, { size, index });
+        return queryPage(SuppliesRequirement, {
+            include: ['creator'],
+            size,
+            index
+        });
+    }
+
+    @Get('/:id')
+    async getOne(@Param('id') id: string) {
+        const requirement = await new Query(SuppliesRequirement).get(id);
+
+        return requirement.toJSON();
     }
 
     @Put('/:id')
@@ -63,12 +77,13 @@ export class RequirementController {
         @Param('id') id: string,
         @Body() { hospital, address, ...rest }: RequirementModel
     ) {
-        const requirement = LCObject.createWithoutData(
-            'SuppliesRequirement',
-            id
-        );
+        let requirement = LCObject.createWithoutData('SuppliesRequirement', id);
 
         await requirement.save(rest, { user });
+
+        requirement = await new Query(SuppliesRequirement)
+            .include('creator')
+            .get(id);
 
         return requirement.toJSON();
     }

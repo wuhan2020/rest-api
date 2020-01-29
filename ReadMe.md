@@ -29,7 +29,7 @@
 
 4. `git clone https://github.com/wuhan2020/rest-api.git`
 
-5. 在本项目文件夹执行安装命令，并登录 LeanCloud 账号，再切换到 `WuHan-2020` 应用后启动
+5. 在本项目文件夹执行安装命令，并登录 LeanCloud 账号，再切换到 `WuHan-2020-test` 应用后启动
 
 ```shell
 npm install
@@ -40,6 +40,14 @@ lean up
 ```
 
 6. 建议安装 [NIM 调试扩展](https://chrome.google.com/webstore/detail/nodejs-v8-inspector-manag/gnhhdgbaldcilmgcpfddgdbkhjohddkj)
+
+## 测试数据
+
+-   地址：https://vsw505fxbitp.leanapp.cn
+
+-   手机号：`19949484787`
+
+-   短信验证码：`003754`
 
 [1]: https://koajs.com/
 [2]: https://www.typescriptlang.org/
