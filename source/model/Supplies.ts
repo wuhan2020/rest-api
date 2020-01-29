@@ -1,6 +1,22 @@
-import { Length, IsArray, IsOptional } from 'class-validator';
+import {
+    Length,
+    IsObject,
+    IsUrl,
+    IsArray,
+    IsOptional,
+    IsString
+} from 'class-validator';
 
-interface Contact {
+import { Address } from './common';
+
+export interface Supplies {
+    name: string;
+    type: 'face' | 'leg' | 'disinfection' | 'device' | 'other';
+    remark: string;
+    count: number;
+}
+
+export interface Contact {
     name: string;
     phone: string;
 }
@@ -9,16 +25,20 @@ export class RequirementModel {
     @Length(5)
     hospital: string;
 
-    @Length(10)
-    address: string;
+    @IsObject()
+    address: Address;
+
+    @IsUrl()
+    url: string;
 
     @IsArray()
-    coords: number[];
-
-    @IsArray()
-    supplies: string[];
+    supplies: Supplies[];
 
     @IsOptional()
     @IsArray()
     contacts?: Contact[];
+
+    @IsOptional()
+    @IsString()
+    remark?: string;
 }
