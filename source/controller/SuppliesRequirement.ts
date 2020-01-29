@@ -44,21 +44,26 @@ export class RequirementController {
             acl.setWriteAccess(user, true),
             acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
 
-        requirement = await new SuppliesRequirement().save(
-            { ...rest, hospital, creator: user },
-            { user }
-        );
+        requirement = await new SuppliesRequirement()
+            .setACL(acl)
+            .save({ ...rest, hospital, creator: user }, { user });
 
         return requirement.toJSON();
     }
 
     @Get()
     getList(
+        @QueryParam('province') province: string,
+        @QueryParam('city') city: string,
+        @QueryParam('district') district: string,
+        @QueryParam('hospital') hospital: string,
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(SuppliesRequirement, {
             include: ['creator'],
+            equal: { province, city, district },
+            contains: { hospital },
             size,
             index
         });

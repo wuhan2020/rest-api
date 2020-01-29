@@ -49,8 +49,15 @@ lean up
 
 -   短信验证码：`003754`
 
+## 特别感谢
+
+[freeCodeCamp 成都社区][1]捐助 ￥ 900 用于购买 **LeanCloud 商业版**一个月，以支撑**每日超 3 万次**的 API 访问。
+
+![](document/LeanCloud-account.png)
+
 [1]: https://koajs.com/
 [2]: https://www.typescriptlang.org/
 [3]: https://leancloud.cn/
 [4]: https://david-dm.org/wuhan2020/rest-api
 [5]: https://travis-ci.com/wuhan2020/rest-api
+[6]: https://fcc-cd.tk/

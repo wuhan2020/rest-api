@@ -21,6 +21,7 @@ interface PageQuery {
     equal?: Condition;
     less?: Condition;
     greater?: Condition;
+    contains?: Condition;
     ascend?: string[];
     descend?: string[];
     select?: string[];
@@ -36,6 +37,7 @@ export async function queryPage<T extends Queriable>(
         equal,
         less,
         greater,
+        contains,
         ascend = [],
         descend = ['updatedAt', 'createdAt'],
         select = [],
@@ -53,6 +55,9 @@ export async function queryPage<T extends Queriable>(
 
     for (const key in greater)
         if (greater[key] != null) query.greaterThanOrEqualTo(key, greater[key]);
+
+    for (const key in contains)
+        if (contains[key] != null) query.contains(key, contains[key]);
 
     const count = await query.count(auth);
 
