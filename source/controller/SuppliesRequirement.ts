@@ -1,4 +1,4 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
+import { Object as LCObject, Query, ACL, GeoPoint } from 'leanengine';
 import {
     JsonController,
     Post,
@@ -26,7 +26,8 @@ export class RequirementController {
     @Authorized()
     async create(
         @Ctx() { currentUser: user }: LCContext,
-        @Body() { hospital, ...rest }: RequirementModel
+        @Body()
+        { hospital, coords, ...rest }: RequirementModel
     ) {
         let requirement = await new Query(SuppliesRequirement)
             .equalTo('hospital', hospital)
@@ -44,9 +45,15 @@ export class RequirementController {
             acl.setWriteAccess(user, true),
             acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
 
-        requirement = await new SuppliesRequirement()
-            .setACL(acl)
-            .save({ ...rest, hospital, creator: user }, { user });
+        requirement = await new SuppliesRequirement().setACL(acl).save(
+            {
+                ...rest,
+                hospital,
+                coords: new GeoPoint(coords),
+                creator: user
+            },
+            { user }
+        );
 
         return requirement.toJSON();
     }
@@ -80,11 +87,14 @@ export class RequirementController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { hospital, address, ...rest }: RequirementModel
+        @Body() { hospital, coords, ...rest }: RequirementModel
     ) {
         let requirement = LCObject.createWithoutData('SuppliesRequirement', id);
 
-        await requirement.save(rest, { user });
+        await requirement.save(
+            { ...rest, coords: new GeoPoint(coords) },
+            { user }
+        );
 
         requirement = await new Query(SuppliesRequirement)
             .include('creator')
