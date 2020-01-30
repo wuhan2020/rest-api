@@ -1,4 +1,4 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
+import { Object as LCObject, Query, ACL, GeoPoint } from 'leanengine';
 import {
     JsonController,
     Post,
@@ -26,7 +26,7 @@ export class HotelController {
     @Authorized()
     async create(
         @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: HotelModel
+        @Body() { name, coords, ...rest }: HotelModel
     ) {
         let hotel = await new Query(Hotel).equalTo('name', name).first();
 
@@ -44,7 +44,10 @@ export class HotelController {
 
         hotel = await new Hotel()
             .setACL(acl)
-            .save({ ...rest, name, creator: user }, { user });
+            .save(
+                { ...rest, name, coords: new GeoPoint(coords), creator: user },
+                { user }
+            );
 
         return hotel.toJSON();
     }
@@ -73,11 +76,11 @@ export class HotelController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { name, ...rest }: HotelModel
+        @Body() { name, coords, ...rest }: HotelModel
     ) {
         let hotel = LCObject.createWithoutData('Hotel', id);
 
-        await hotel.save(rest, { user });
+        await hotel.save({ ...rest, coords: new GeoPoint(coords) }, { user });
 
         hotel = await new Query(Hotel).include('creator').get(id);
 

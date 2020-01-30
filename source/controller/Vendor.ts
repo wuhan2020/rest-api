@@ -1,4 +1,4 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
+import { Object as LCObject, Query, ACL, GeoPoint } from 'leanengine';
 import {
     JsonController,
     Post,
@@ -25,7 +25,7 @@ export class VendorController {
     @Authorized()
     async create(
         @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: VendorModel
+        @Body() { name, coords, ...rest }: VendorModel
     ) {
         let vendor = await new Query(Vendor).equalTo('name', name).first();
 
@@ -43,7 +43,10 @@ export class VendorController {
 
         vendor = await new Vendor()
             .setACL(acl)
-            .save({ ...rest, name, creator: user }, { user });
+            .save(
+                { ...rest, name, coords: new GeoPoint(coords), creator: user },
+                { user }
+            );
 
         return vendor.toJSON();
     }
@@ -72,11 +75,11 @@ export class VendorController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { name, ...rest }: VendorModel
+        @Body() { name, coords, ...rest }: VendorModel
     ) {
         let vendor = LCObject.createWithoutData('Vendor', id);
 
-        await vendor.save(rest, { user });
+        await vendor.save({ ...rest, coords: new GeoPoint(coords) }, { user });
 
         vendor = await new Query(Vendor).include('creator').get(id);
 

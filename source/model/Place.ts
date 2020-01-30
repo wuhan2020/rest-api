@@ -17,7 +17,20 @@ export interface Contact {
     phone: string;
 }
 
-export class PlaceModel {
+export class OrganizationModel {
+    @IsUrl()
+    url: string;
+
+    @IsOptional()
+    @IsArray()
+    contacts?: Contact[];
+
+    @IsOptional()
+    @IsString()
+    remark?: string;
+}
+
+export class PlaceModel extends OrganizationModel {
     @Length(3)
     province: string;
 
@@ -32,15 +45,4 @@ export class PlaceModel {
 
     @IsObject()
     coords: GeoCoord;
-
-    @IsUrl()
-    url: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
 }

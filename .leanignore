@@ -3,6 +3,6 @@
 .avoscloud/
 .leancloud/
 node_modules/
-.travis.yml
+.github/
 ReadMe.md
 tsconfig.json
