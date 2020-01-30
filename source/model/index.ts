@@ -3,3 +3,4 @@ export * from './Place';
 export * from './Supplies';
 export * from './Logistics';
 export * from './Hotel';
+export * from './Vendor';

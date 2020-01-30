@@ -13,7 +13,8 @@ import {
     FileController,
     RequirementController,
     LogisticsController,
-    HotelController
+    HotelController,
+    VendorController
 } from './controller';
 
 const {
@@ -43,6 +44,7 @@ useKoaServer(app, {
     cors: { credentials: true },
     authorizationChecker: ({ context }) => !!(context as LCContext).currentUser,
     controllers: [
+        VendorController,
         HotelController,
         LogisticsController,
         RequirementController,

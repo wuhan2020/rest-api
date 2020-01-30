@@ -14,6 +14,7 @@
 5. [物资需求管理](source/controller/SuppliesRequirement.ts)
 6. [物流管理](source/controller/Logistics.ts)
 7. [酒店管理](source/controller/Hotel.ts)
+8. [供应商管理](source/controller/Vendor.ts)
 
 ## 环境变量
 
@@ -23,7 +24,7 @@
 
 ## 本地开发
 
-1. 注册 [LeanCloud][3] 账号后，发邮件给 shiy2008@gmail.com 申请协作权限
+1. 注册 [LeanCloud][3] 账号后，发邮件给 shiy2008@gmail.com 申请协作权限（需 LeanCloud 用户名）
 
 2. 安装 [LeanCloud CLI](https://leancloud.cn/docs/leanengine_cli.html#hash1443149115)
 

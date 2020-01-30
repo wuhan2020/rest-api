@@ -6,3 +6,4 @@ export * from './File';
 export * from './SuppliesRequirement';
 export * from './Logistics';
 export * from './Hotel';
+export * from './Vendor';
