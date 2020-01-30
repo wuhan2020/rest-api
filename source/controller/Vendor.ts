@@ -72,7 +72,7 @@ export class VendorController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { name, ...rest }: HotelModel
+        @Body() { name, ...rest }: VendorModel
     ) {
         let vendor = LCObject.createWithoutData('Vendor', id);
 
