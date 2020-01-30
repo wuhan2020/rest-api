@@ -14,7 +14,7 @@ import {
     OnUndefined
 } from 'routing-controllers';
 import { LCContext, queryPage } from '../utility';
-import { HotelModel } from '../model';
+import { VendorModel } from '../model';
 import { RoleController } from './Role';
 
 export class Vendor extends LCObject {}
@@ -25,7 +25,7 @@ export class VendorController {
     @Authorized()
     async create(
         @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: HotelModel
+        @Body() { name, ...rest }: VendorModel
     ) {
         let vendor = await new Query(Vendor).equalTo('name', name).first();
 
@@ -72,7 +72,7 @@ export class VendorController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { name, ...rest }: HotelModel
+        @Body() { name, ...rest }: VendorModel
     ) {
         let vendor = LCObject.createWithoutData('Vendor', id);
 
