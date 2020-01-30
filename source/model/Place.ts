@@ -1,11 +1,23 @@
-import { Length, IsObject } from 'class-validator';
+import {
+    Length,
+    IsObject,
+    IsUrl,
+    IsOptional,
+    IsArray,
+    IsString
+} from 'class-validator';
 
 export interface GeoCoord {
     latitude: number;
     longitude: number;
 }
 
-export class Place {
+export interface Contact {
+    name: string;
+    phone: string;
+}
+
+export class PlaceModel {
     @Length(3)
     province: string;
 
@@ -20,4 +32,15 @@ export class Place {
 
     @IsObject()
     coords: GeoCoord;
+
+    @IsUrl()
+    url: string;
+
+    @IsOptional()
+    @IsArray()
+    contacts?: Contact[];
+
+    @IsOptional()
+    @IsString()
+    remark?: string;
 }

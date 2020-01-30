@@ -1,5 +1,6 @@
 import { Length, IsUrl, IsArray, IsOptional, IsString } from 'class-validator';
-import { Contact } from './Supplies';
+
+import { Contact } from './Place';
 
 export interface ServiceArea {
     city: string;

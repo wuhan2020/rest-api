@@ -12,6 +12,8 @@
 3. [用户管理](source/controller/User.ts)
 4. [文件管理](source/controller/File.ts)
 5. [物资需求管理](source/controller/SuppliesRequirement.ts)
+6. [物流管理](source/controller/Logistics.ts)
+7. [酒店管理](source/controller/Hotel.ts)
 
 ## 环境变量
 

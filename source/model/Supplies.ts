@@ -1,6 +1,6 @@
-import { Length, IsUrl, IsArray, IsOptional, IsString } from 'class-validator';
+import { Length, IsArray } from 'class-validator';
 
-import { Place } from './Place';
+import { PlaceModel } from './Place';
 
 export interface Supplies {
     name: string;
@@ -9,26 +9,10 @@ export interface Supplies {
     count: number;
 }
 
-export interface Contact {
-    name: string;
-    phone: string;
-}
-
-export class RequirementModel extends Place {
+export class RequirementModel extends PlaceModel {
     @Length(5)
     hospital: string;
 
-    @IsUrl()
-    url: string;
-
     @IsArray()
     supplies: Supplies[];
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
 }

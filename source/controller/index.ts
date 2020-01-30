@@ -5,3 +5,4 @@ export * from './User';
 export * from './File';
 export * from './SuppliesRequirement';
 export * from './Logistics';
+export * from './Hotel';
