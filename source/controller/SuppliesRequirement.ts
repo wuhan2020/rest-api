@@ -15,7 +15,7 @@ import {
 } from 'routing-controllers';
 
 import { LCContext, queryPage } from '../utility';
-import { RequirementModel } from '../model/Supplies';
+import { RequirementModel } from '../model';
 import { RoleController } from './Role';
 
 export class SuppliesRequirement extends LCObject {}

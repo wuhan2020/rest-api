@@ -16,6 +16,7 @@
 7. [酒店管理](source/controller/Hotel.ts)
 8. [供应商管理](source/controller/Vendor.ts)
 9. [义诊管理](source/controller/Clinic.ts)
+10. [捐款接收方管理](source/controller/DonationRecipient.ts)
 
 ## 环境变量
 
