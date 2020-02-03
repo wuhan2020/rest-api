@@ -26,7 +26,7 @@ export class ClinicController {
     @Authorized()
     async create(
         @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, startTime, endTime, ...rest }: ClinicModel
+        @Body() { name, ...rest }: ClinicModel
     ) {
         let clinic = await new Query(Clinic).equalTo('name', name).first();
 
@@ -42,16 +42,9 @@ export class ClinicController {
             acl.setWriteAccess(user, true),
             acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
 
-        clinic = await new Clinic().setACL(acl).save(
-            {
-                ...rest,
-                name,
-                startTime: new Date(startTime),
-                endTime: new Date(endTime),
-                creator: user
-            },
-            { user }
-        );
+        clinic = await new Clinic()
+            .setACL(acl)
+            .save({ ...rest, name, creator: user }, { user });
 
         return clinic.toJSON();
     }
@@ -80,18 +73,11 @@ export class ClinicController {
     async edit(
         @Ctx() { currentUser: user }: LCContext,
         @Param('id') id: string,
-        @Body() { name, startTime, endTime, ...rest }: ClinicModel
+        @Body() { name, ...rest }: ClinicModel
     ) {
         let clinic = LCObject.createWithoutData('Clinic', id);
 
-        await clinic.save(
-            {
-                ...rest,
-                startTime: new Date(startTime),
-                endTime: new Date(endTime)
-            },
-            { user }
-        );
+        await clinic.save(rest, { user });
 
         clinic = await new Query(Clinic).include('creator').get(id);
 

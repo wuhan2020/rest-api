@@ -1,4 +1,4 @@
-import { Length, IsDateString } from 'class-validator';
+import { Length, IsMilitaryTime } from 'class-validator';
 
 import { OrganizationModel } from './Place';
 
@@ -6,9 +6,9 @@ export class ClinicModel extends OrganizationModel {
     @Length(2)
     name: string;
 
-    @IsDateString()
+    @IsMilitaryTime()
     startTime: string;
 
-    @IsDateString()
+    @IsMilitaryTime()
     endTime: string;
 }

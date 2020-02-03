@@ -3,7 +3,7 @@
 基于 [Koa][1]、[TypeScript][2] 和 [LeanCloud][3] 的 **Node.js 后端**项目脚手架
 
 [![NPM Dependency](https://david-dm.org/wuhan2020/rest-api.svg)][4]
-[![Build Status](https://travis-ci.com/wuhan2020/rest-api.svg?branch=master)][5]
+[![CI Status](https://github.com/wuhan2020/WebApp/workflows/PWA%20CI/CD/badge.svg)][5]
 
 ## 主要特性
 
@@ -64,5 +64,5 @@ lean up
 [2]: https://www.typescriptlang.org/
 [3]: https://leancloud.cn/
 [4]: https://david-dm.org/wuhan2020/rest-api
-[5]: https://travis-ci.com/wuhan2020/rest-api
+[5]: https://github.com/wuhan2020/WebApp/actions
 [6]: https://fcc-cd.tk/
