@@ -1,0 +1,8 @@
+.git/
+.DS_Store
+.avoscloud/
+.leancloud/
+node_modules/
+.github/
+ReadMe.md
+tsconfig.json
