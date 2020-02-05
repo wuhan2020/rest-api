@@ -10,8 +10,9 @@ import {
     QueryParam,
     Param,
     Put,
-    Delete,
-    OnUndefined
+    Patch,
+    OnUndefined,
+    Delete
 } from 'routing-controllers';
 import { LCContext, queryPage } from '../utility';
 import { VendorModel } from '../model';
@@ -41,23 +42,34 @@ export class VendorController {
             acl.setWriteAccess(user, true),
             acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
 
-        vendor = await new Vendor()
-            .setACL(acl)
-            .save(
-                { ...rest, name, coords: new GeoPoint(coords), creator: user },
-                { user }
-            );
+        vendor = await new Vendor().setACL(acl).save(
+            {
+                ...rest,
+                name,
+                coords: new GeoPoint(coords),
+                creator: user,
+                verified: false
+            },
+            { user }
+        );
 
         return vendor.toJSON();
     }
 
     @Get()
     getList(
+        @QueryParam('verified') verified: boolean,
+        @QueryParam('province') province: string,
+        @QueryParam('city') city: string,
+        @QueryParam('district') district: string,
+        @QueryParam('name') name: string,
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(Vendor, {
-            include: ['creator'],
+            include: ['creator', 'verifier'],
+            equal: { verified, province, city, district },
+            contains: { name },
             size,
             index
         });
@@ -79,11 +91,35 @@ export class VendorController {
     ) {
         let vendor = LCObject.createWithoutData('Vendor', id);
 
-        await vendor.save({ ...rest, coords: new GeoPoint(coords) }, { user });
+        await vendor.save(
+            {
+                ...rest,
+                coords: new GeoPoint(coords),
+                verified: false,
+                verifier: null
+            },
+            { user }
+        );
 
         vendor = await new Query(Vendor).include('creator').get(id);
 
         return vendor.toJSON();
+    }
+
+    @Patch('/:id')
+    @Authorized()
+    @OnUndefined(204)
+    async verify(
+        @Ctx() { currentUser: user }: LCContext,
+        @Param('id') id: string,
+        @Body() { verified }: { verified: boolean }
+    ) {
+        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+
+        await LCObject.createWithoutData('Vendor', id).save(
+            { verified, verifier: user },
+            { user }
+        );
     }
 
     @Delete('/:id')

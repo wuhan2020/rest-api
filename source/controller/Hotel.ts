@@ -10,8 +10,9 @@ import {
     QueryParam,
     Param,
     Put,
-    Delete,
-    OnUndefined
+    Patch,
+    OnUndefined,
+    Delete
 } from 'routing-controllers';
 
 import { LCContext, queryPage } from '../utility';
@@ -42,23 +43,34 @@ export class HotelController {
             acl.setWriteAccess(user, true),
             acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
 
-        hotel = await new Hotel()
-            .setACL(acl)
-            .save(
-                { ...rest, name, coords: new GeoPoint(coords), creator: user },
-                { user }
-            );
+        hotel = await new Hotel().setACL(acl).save(
+            {
+                ...rest,
+                name,
+                coords: new GeoPoint(coords),
+                creator: user,
+                verified: false
+            },
+            { user }
+        );
 
         return hotel.toJSON();
     }
 
     @Get()
     getList(
+        @QueryParam('verified') verified: boolean,
+        @QueryParam('province') province: string,
+        @QueryParam('city') city: string,
+        @QueryParam('district') district: string,
+        @QueryParam('name') name: string,
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(Hotel, {
-            include: ['creator'],
+            include: ['creator', 'verifier'],
+            equal: { verified, province, city, district },
+            contains: { name },
             size,
             index
         });
@@ -80,11 +92,35 @@ export class HotelController {
     ) {
         let hotel = LCObject.createWithoutData('Hotel', id);
 
-        await hotel.save({ ...rest, coords: new GeoPoint(coords) }, { user });
+        await hotel.save(
+            {
+                ...rest,
+                coords: new GeoPoint(coords),
+                verified: false,
+                verifier: null
+            },
+            { user }
+        );
 
         hotel = await new Query(Hotel).include('creator').get(id);
 
         return hotel.toJSON();
+    }
+
+    @Patch('/:id')
+    @Authorized()
+    @OnUndefined(204)
+    async verify(
+        @Ctx() { currentUser: user }: LCContext,
+        @Param('id') id: string,
+        @Body() { verified }: { verified: boolean }
+    ) {
+        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+
+        await LCObject.createWithoutData('Hotel', id).save(
+            { verified, verifier: user },
+            { user }
+        );
     }
 
     @Delete('/:id')

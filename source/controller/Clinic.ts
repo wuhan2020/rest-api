@@ -1,4 +1,4 @@
-import { Object as LCObject, Query, ACL, stringify } from 'leanengine';
+import { Object as LCObject, Query, ACL } from 'leanengine';
 import {
     JsonController,
     Post,
@@ -10,8 +10,9 @@ import {
     QueryParam,
     Param,
     Put,
-    Delete,
-    OnUndefined
+    Patch,
+    OnUndefined,
+    Delete
 } from 'routing-controllers';
 
 import { LCContext, queryPage } from '../utility';
@@ -44,18 +45,20 @@ export class ClinicController {
 
         clinic = await new Clinic()
             .setACL(acl)
-            .save({ ...rest, name, creator: user }, { user });
+            .save({ ...rest, name, creator: user, verified: false }, { user });
 
         return clinic.toJSON();
     }
 
     @Get()
     getList(
+        @QueryParam('verified') verified: boolean,
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(Clinic, {
-            include: ['creator'],
+            include: ['creator', 'verifier'],
+            equal: { verified },
             size,
             index
         });
@@ -77,11 +80,30 @@ export class ClinicController {
     ) {
         let clinic = LCObject.createWithoutData('Clinic', id);
 
-        await clinic.save(rest, { user });
+        await clinic.save(
+            { ...rest, verified: false, verifier: null },
+            { user }
+        );
 
         clinic = await new Query(Clinic).include('creator').get(id);
 
         return clinic.toJSON();
+    }
+
+    @Patch('/:id')
+    @Authorized()
+    @OnUndefined(204)
+    async verify(
+        @Ctx() { currentUser: user }: LCContext,
+        @Param('id') id: string,
+        @Body() { verified }: { verified: boolean }
+    ) {
+        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+
+        await LCObject.createWithoutData('Clinic', id).save(
+            { verified, verifier: user },
+            { user }
+        );
     }
 
     @Delete('/:id')

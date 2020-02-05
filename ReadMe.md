@@ -3,7 +3,7 @@
 基于 [Koa][1]、[TypeScript][2] 和 [LeanCloud][3] 的 **Node.js 后端**项目脚手架
 
 [![NPM Dependency](https://david-dm.org/wuhan2020/rest-api.svg)][4]
-[![CI Status](https://github.com/wuhan2020/WebApp/workflows/PWA%20CI/CD/badge.svg)][5]
+[![CI Status](https://github.com/wuhan2020/rest-api/workflows/PWA%20CI/CD/badge.svg)][5]
 
 ## 主要特性
 
@@ -26,7 +26,7 @@
 
 ## 本地开发
 
-1. 注册 [LeanCloud][3] 账号后，发邮件给 shiy2008@gmail.com 申请协作权限（需 LeanCloud 用户名）
+1. 注册 [LeanCloud][3] 账号并**验证注册邮箱**后，发邮件给 shiy2008@gmail.com 申请协作权限（需 LeanCloud 用户名）
 
 2. 安装 [LeanCloud CLI](https://leancloud.cn/docs/leanengine_cli.html#hash1443149115)
 
@@ -64,5 +64,5 @@ lean up
 [2]: https://www.typescriptlang.org/
 [3]: https://leancloud.cn/
 [4]: https://david-dm.org/wuhan2020/rest-api
-[5]: https://github.com/wuhan2020/WebApp/actions
+[5]: https://github.com/wuhan2020/rest-api/actions
 [6]: https://fcc-cd.tk/

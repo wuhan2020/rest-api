@@ -10,8 +10,9 @@ import {
     QueryParam,
     Param,
     Put,
-    Delete,
-    OnUndefined
+    Patch,
+    OnUndefined,
+    Delete
 } from 'routing-controllers';
 
 import { LCContext, queryPage } from '../utility';
@@ -46,18 +47,20 @@ export class LogisticsController {
 
         logistics = await new Logistics()
             .setACL(acl)
-            .save({ ...rest, name, creator: user }, { user });
+            .save({ ...rest, name, creator: user, verified: false }, { user });
 
         return logistics.toJSON();
     }
 
     @Get()
     getList(
+        @QueryParam('verified') verified: boolean,
         @QueryParam('pageSize') size: number,
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(Logistics, {
-            include: ['creator'],
+            include: ['creator', 'verifier'],
+            equal: { verified },
             size,
             index
         });
@@ -79,11 +82,30 @@ export class LogisticsController {
     ) {
         let logistics = LCObject.createWithoutData('Logistics', id);
 
-        await logistics.save(rest, { user });
+        await logistics.save(
+            { ...rest, verified: false, verifier: null },
+            { user }
+        );
 
         logistics = await new Query(Logistics).include('creator').get(id);
 
         return logistics.toJSON();
+    }
+
+    @Patch('/:id')
+    @Authorized()
+    @OnUndefined(204)
+    async verify(
+        @Ctx() { currentUser: user }: LCContext,
+        @Param('id') id: string,
+        @Body() { verified }: { verified: boolean }
+    ) {
+        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+
+        await LCObject.createWithoutData('Logistics', id).save(
+            { verified, verifier: user },
+            { user }
+        );
     }
 
     @Delete('/:id')

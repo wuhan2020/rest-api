@@ -22,6 +22,7 @@ interface PageQuery {
     less?: Condition;
     greater?: Condition;
     contains?: Condition;
+    exists?: string[];
     ascend?: string[];
     descend?: string[];
     select?: string[];
@@ -38,6 +39,7 @@ export async function queryPage<T extends Queriable>(
         less,
         greater,
         contains,
+        exists = [],
         ascend = [],
         descend = ['updatedAt', 'createdAt'],
         select = [],
@@ -58,6 +60,8 @@ export async function queryPage<T extends Queriable>(
 
     for (const key in contains)
         if (contains[key] != null) query.contains(key, contains[key]);
+
+    for (const key of exists) query.exists(key);
 
     const count = await query.count(auth);
 

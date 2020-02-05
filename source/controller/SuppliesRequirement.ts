@@ -10,8 +10,9 @@ import {
     QueryParam,
     Put,
     Param,
-    Delete,
-    OnUndefined
+    Patch,
+    OnUndefined,
+    Delete
 } from 'routing-controllers';
 
 import { LCContext, queryPage } from '../utility';
@@ -50,7 +51,8 @@ export class RequirementController {
                 ...rest,
                 hospital,
                 coords: new GeoPoint(coords),
-                creator: user
+                creator: user,
+                verified: false
             },
             { user }
         );
@@ -60,6 +62,7 @@ export class RequirementController {
 
     @Get()
     getList(
+        @QueryParam('verified') verified: boolean,
         @QueryParam('province') province: string,
         @QueryParam('city') city: string,
         @QueryParam('district') district: string,
@@ -68,8 +71,8 @@ export class RequirementController {
         @QueryParam('pageIndex') index: number
     ) {
         return queryPage(SuppliesRequirement, {
-            include: ['creator'],
-            equal: { province, city, district },
+            include: ['creator', 'verifier'],
+            equal: { verified, province, city, district },
             contains: { hospital },
             size,
             index
@@ -92,7 +95,12 @@ export class RequirementController {
         let requirement = LCObject.createWithoutData('SuppliesRequirement', id);
 
         await requirement.save(
-            { ...rest, coords: new GeoPoint(coords) },
+            {
+                ...rest,
+                coords: new GeoPoint(coords),
+                verified: false,
+                verifier: null
+            },
             { user }
         );
 
@@ -101,6 +109,22 @@ export class RequirementController {
             .get(id);
 
         return requirement.toJSON();
+    }
+
+    @Patch('/:id')
+    @Authorized()
+    @OnUndefined(204)
+    async verify(
+        @Ctx() { currentUser: user }: LCContext,
+        @Param('id') id: string,
+        @Body() { verified }: { verified: boolean }
+    ) {
+        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+
+        await LCObject.createWithoutData('SuppliesRequirement', id).save(
+            { verified, verifier: user },
+            { user }
+        );
     }
 
     @Delete('/:id')
