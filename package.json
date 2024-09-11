@@ -1,42 +1,42 @@
 {
     "name": "@wuhan2020/rest-api",
-    "version": "1.0.0",
+    "version": "2.0.0",
     "description": "Node.js Back-end project scaffold based on Koa, TypeScript & LeanCloud",
     "author": "shiy2008@gmail.com",
     "private": true,
     "main": "dist/index.js",
     "engines": {
-        "node": "^12.0.0"
+        "node": ">=20"
     },
     "dependencies": {
-        "class-transformer": "^0.2.3",
-        "class-validator": "0.11.0",
-        "kcors": "^2.2.2",
-        "koa": "^2.11.0",
-        "koa-bodyparser": "^4.2.1",
+        "@koa/cors": "^5.0.0",
+        "@koa/multer": "^3.0.2",
+        "@koa/router": "^13.0.0",
+        "class-transformer": "^0.5.1",
+        "class-validator": "0.14.1",
+        "koa": "^2.15.3",
+        "koa-bodyparser": "^4.4.1",
         "koa-logger": "^3.2.1",
-        "koa-multer": "^1.0.2",
-        "koa-router": "^8.0.6",
         "leancloud-storage": "^3.15.0",
-        "leanengine": "^3.5.0",
-        "reflect-metadata": "^0.1.13",
-        "routing-controllers": "^0.8.0"
+        "leanengine": "^3.8.0",
+        "reflect-metadata": "^0.2.2",
+        "routing-controllers": "^0.10.4",
+        "typeorm": "^0.3.20"
     },
     "devDependencies": {
-        "@types/koa": "^2.11.0",
-        "@types/koa-bodyparser": "^4.3.0",
-        "@types/koa-logger": "^3.1.1",
-        "@types/koa-multer": "^1.0.0",
-        "@types/koa-router": "^7.4.0",
-        "@typescript-eslint/eslint-plugin": "^2.19.0",
-        "@typescript-eslint/parser": "^2.19.0",
-        "eslint": "^6.8.0",
-        "husky": "^4.2.1",
-        "lint-staged": "^10.0.7",
-        "nodemon": "^2.0.2",
-        "prettier": "^1.19.1",
-        "ts-node": "^8.6.2",
-        "typescript": "^3.7.5"
+        "@types/koa": "^2.15.0",
+        "@types/koa-bodyparser": "^4.3.12",
+        "@types/koa-logger": "^3.1.5",
+        "@types/koa__multer": "^2.0.7",
+        "@typescript-eslint/eslint-plugin": "^8.5.0",
+        "@typescript-eslint/parser": "^8.5.0",
+        "eslint": "^8.57.0",
+        "husky": "^9.1.5",
+        "lint-staged": "^15.2.10",
+        "nodemon": "^3.1.4",
+        "prettier": "^3.3.3",
+        "ts-node": "^10.9.2",
+        "typescript": "~5.6.2"
     },
     "prettier": {
         "singleQuote": true,
@@ -51,25 +51,18 @@
         ]
     },
     "lint-staged": {
-        "*.{md,json,yml}": [
-            "prettier --write"
-        ],
+        "*.{md,json,yml}": "prettier --write",
         "*.ts": [
             "prettier --write",
             "eslint --fix"
         ]
     },
     "scripts": {
+        "prepare": "husky",
         "test": "lint-staged",
         "dev": "nodemon --inspect --watch source/**/* -e ts --exec node -r ts-node/register source/",
         "build": "tsc",
         "deploy": "lint-staged  &&  tsc  &&  lean deploy",
         "start": "node dist/"
-    },
-    "husky": {
-        "hooks": {
-            "pre-commit": "npm test",
-            "pre-push": "npm run build"
-        }
     }
 }

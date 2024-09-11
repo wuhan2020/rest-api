@@ -8,9 +8,9 @@ import {
     QueryParam,
     Delete,
     Param,
-    OnUndefined
+    OnUndefined,
 } from 'routing-controllers';
-import { File } from 'koa-multer';
+import { File } from '@koa/multer';
 import { File as LCFile, ACL, Object as LCObject } from 'leanengine';
 
 import { LCContext, queryPage } from '../utility';
@@ -22,13 +22,13 @@ export class FileController {
     @Authorized()
     async create(
         @Ctx() { currentUser }: LCContext,
-        @UploadedFile('file') { buffer, originalname }: File
+        @UploadedFile('file') { buffer, originalname }: File,
     ) {
         const acl = new ACL();
 
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(currentUser, true);
+        acl.setPublicReadAccess(true);
+        acl.setPublicWriteAccess(false);
+        acl.setWriteAccess(currentUser, true);
 
         const admin = await RoleController.getAdmin();
 
@@ -36,14 +36,14 @@ export class FileController {
 
         const file = await new LCFile(originalname, buffer).setACL(acl).save();
 
-        return file.toJSON();
+        return file.toJSON() as LCFile;
     }
 
     @Get()
     @Authorized()
     getList(
         @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
+        @QueryParam('pageIndex') index: number,
     ) {
         return queryPage(LCFile, { size, index });
     }
@@ -53,7 +53,7 @@ export class FileController {
     @OnUndefined(204)
     async delete(
         @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
+        @Param('id') id: string,
     ) {
         await LCObject.createWithoutData('_File', id).destroy({ user });
     }
