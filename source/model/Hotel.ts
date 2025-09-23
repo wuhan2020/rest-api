@@ -73,35 +73,4 @@ export class Hotel extends UserBase {
     verifier?: User;
 }
 
-export class HotelModel {
-    @Length(2)
-    name: string;
 
-    @IsPositive()
-    capacity: number;
-
-    @Length(3)
-    province: string;
-
-    @Length(3)
-    city: string;
-
-    @Length(2)
-    district: string;
-
-    @Length(5)
-    address: string;
-
-    coords: GeoCoord;
-
-    @IsOptional()
-    url?: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-}

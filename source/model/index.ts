@@ -3,7 +3,6 @@ export * from './Base';
 export * from './User';
 export * from './Place';
 export * from './Supplies';
-export * from './SuppliesRequirement';
 export * from './Logistics';
 export * from './Hotel';
 export * from './Vendor';

@@ -2,60 +2,45 @@ import {
     JsonController,
     Post,
     Authorized,
-    Ctx,
     Body,
     ForbiddenError,
     Get,
     QueryParam,
     Param,
     Put,
-    Patch,
     OnUndefined,
     Delete,
-    NotFoundError
+    NotFoundError,
+    CurrentUser
 } from 'routing-controllers';
-import { AuthenticatedContext, queryPage, searchConditionOf } from '../utility';
-import { VendorModel, Vendor, dataSource, UserRole } from '../model';
+import { ResponseSchema } from 'routing-controllers-openapi';
+import { OnNull } from 'routing-controllers';
+import { queryPage, searchConditionOf } from '../utility';
+import { Vendor, dataSource, UserRole, User } from '../model';
 import { FindOptionsWhere, ILike } from 'typeorm';
+import { ActivityLogController } from './ActivityLog';
+
+const vendorRepo = dataSource.getRepository(Vendor);
 
 @JsonController('/vendor')
 export class VendorController {
     @Post()
     @Authorized()
+    @ResponseSchema(Vendor)
     async create(
-        @Ctx() { state: { user } }: AuthenticatedContext,
-        @Body() { name, coords, ...rest }: VendorModel
+        @CurrentUser() createdBy: User,
+        @Body() vendor: Vendor
     ) {
-        if (!user) {
-            throw new ForbiddenError('User not authenticated');
-        }
-
-        const vendorRepo = dataSource.getRepository(Vendor);
+        const savedVendor = await vendorRepo.save({ ...vendor, createdBy });
         
-        // Check if vendor with same name already exists
-        const existingVendor = await vendorRepo.findOne({ 
-            where: { name } 
-        });
-
-        if (existingVendor) {
-            throw new ForbiddenError(
-                '同一供应商不能重复发布，请联系原发布者修改'
-            );
-        }
-
-        const vendor = new Vendor();
-        Object.assign(vendor, rest);
-        vendor.name = name;
-        vendor.coords = coords;
-        vendor.createdBy = user;
-        vendor.verified = false;
-
-        const savedVendor = await vendorRepo.save(vendor);
+        await ActivityLogController.logCreate(createdBy, 'Vendor', savedVendor.id);
+        
         return savedVendor;
     }
 
     @Get()
-    async getList(
+    @ResponseSchema(Array)
+    getList(
         @QueryParam('verified') verified: boolean,
         @QueryParam('province') province: string,
         @QueryParam('city') city: string,
@@ -64,8 +49,6 @@ export class VendorController {
         @QueryParam('pageSize') size: number = 10,
         @QueryParam('pageIndex') index: number = 1
     ) {
-        const vendorRepo = dataSource.getRepository(Vendor);
-        
         let where: FindOptionsWhere<Vendor> = {};
         
         if (verified !== undefined) where.verified = verified;
@@ -87,94 +70,48 @@ export class VendorController {
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: number) {
-        const vendorRepo = dataSource.getRepository(Vendor);
-        
-        const vendor = await vendorRepo.findOne({
+    @ResponseSchema(Vendor)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return vendorRepo.findOne({
             where: { id },
             relations: ['createdBy', 'verifier']
         });
-
-        if (!vendor) {
-            throw new NotFoundError('Vendor not found');
-        }
-
-        return vendor;
     }
 
     @Put('/:id')
     @Authorized()
+    @ResponseSchema(Vendor)
     async edit(
-        @Ctx() { state: { user } }: AuthenticatedContext,
+        @CurrentUser() updatedBy: User,
         @Param('id') id: number,
-        @Body() { name, coords, ...rest }: VendorModel
-    ) {
-        if (!user) {
-            throw new ForbiddenError('User not authenticated');
-        }
-
-        const vendorRepo = dataSource.getRepository(Vendor);
+        @Body() { verified, ...vendor }: Vendor
+    ) {     
+        const existed = await vendorRepo.existsBy({ id });
         
-        const vendor = await vendorRepo.findOne({ 
-            where: { id },
-            relations: ['createdBy'] 
+        if (!existed)
+            throw new NotFoundError('Vendor not found');
+
+        if (verified != null && !updatedBy.roles.includes(UserRole.Admin))
+            throw new ForbiddenError('Only Admin can verify vendors');
+
+        const savedVendor = await vendorRepo.save({ 
+            ...vendor, 
+            id, 
+            verified, 
+            verifier: verified != null ? updatedBy : null, 
+            updatedBy 
         });
         
-        if (!vendor) {
-            throw new NotFoundError('Vendor not found');
-        }
-
-        // Update vendor properties
-        Object.assign(vendor, rest);
-        vendor.name = name;
-        vendor.coords = coords;
-        vendor.verified = false;
-        vendor.verifier = undefined;
-        vendor.updatedBy = user;
-
-        const updatedVendor = await vendorRepo.save(vendor);
-        return updatedVendor;
-    }
-
-    @Patch('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async verify(
-        @Ctx() { state: { user } }: AuthenticatedContext,
-        @Param('id') id: number,
-        @Body() { verified }: { verified: boolean }
-    ) {
-        if (!user || !user.roles.includes(UserRole.Admin)) {
-            throw new ForbiddenError('Admin access required');
-        }
-
-        const vendorRepo = dataSource.getRepository(Vendor);
+        await ActivityLogController.logUpdate(updatedBy, 'Vendor', id);
         
-        const vendor = await vendorRepo.findOne({ where: { id } });
-        if (!vendor) {
-            throw new NotFoundError('Vendor not found');
-        }
-
-        vendor.verified = verified;
-        vendor.verifier = user;
-        vendor.updatedBy = user;
-
-        await vendorRepo.save(vendor);
+        return savedVendor;
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { state: { user } }: AuthenticatedContext,
-        @Param('id') id: number
-    ) {
-        if (!user) {
-            throw new ForbiddenError('User not authenticated');
-        }
-
-        const vendorRepo = dataSource.getRepository(Vendor);
-        
+    async delete(@CurrentUser() deletedBy: User, @Param('id') id: number) {
         const vendor = await vendorRepo.findOne({ 
             where: { id },
             relations: ['createdBy']
@@ -184,11 +121,11 @@ export class VendorController {
             throw new NotFoundError('Vendor not found');
         }
 
-        // Check if user has permission to delete (creator or admin)
-        if (vendor.createdBy?.id !== user.id && !user.roles.includes(UserRole.Admin)) {
+        if (vendor.createdBy?.id !== deletedBy.id && !deletedBy.roles.includes(UserRole.Admin)) {
             throw new ForbiddenError('Permission denied');
         }
 
-        await vendorRepo.softRemove(vendor);
+        await vendorRepo.softDelete(id);
+        await ActivityLogController.logDelete(deletedBy, 'Vendor', id);
     }
 }

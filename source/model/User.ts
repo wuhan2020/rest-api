@@ -60,30 +60,6 @@ export class UserListChunk implements ListChunk<User> {
     list: User[];
 }
 
-export class UserModel {
-    @IsMobilePhone('zh-CN')
-    mobilePhoneNumber: string;
-
-    @Length(3)
-    name?: string;
-
-    @IsEnum(Gender)
-    @IsOptional()
-    gender?: Gender;
-
-    @IsPositive()
-    @IsOptional()
-    age?: number;
-
-    @IsUrl()
-    @IsOptional()
-    avatar?: string;
-
-    @IsEmail()
-    @IsOptional()
-    email?: string;
-}
-
 @Entity()
 export class User extends Base {
     @IsString()

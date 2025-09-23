@@ -2,7 +2,9 @@ import { Context } from 'koa';
 import { FindOptionsWhere, ILike, Repository, FindManyOptions, FindOptionsOrder } from 'typeorm';
 import jwt from 'jsonwebtoken';
 import { User } from './model/User';
-import { APP_SECRET } from './model/DataSource';
+import { APP_SECRET, NODE_ENV } from './model/DataSource';
+
+export const isProduct = NODE_ENV === 'production';
 
 interface JWTPayload {
     id: number;

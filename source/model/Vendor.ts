@@ -17,7 +17,7 @@ import { Supplies } from './Supplies';
 export class Vendor extends UserBase {
     @IsString()
     @Length(2)
-    @Column()
+    @Column({ unique: true })
     name: string;
 
     @IsString()
@@ -78,38 +78,4 @@ export class Vendor extends UserBase {
     verifier?: User;
 }
 
-export class VendorModel {
-    @Length(2)
-    name: string;
 
-    @Length(5)
-    qualification: string;
-
-    @Length(3)
-    province: string;
-
-    @Length(3)
-    city: string;
-
-    @Length(2)
-    district: string;
-
-    @Length(5)
-    address: string;
-
-    coords: GeoCoord;
-
-    @IsOptional()
-    url?: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-
-    @IsArray()
-    supplies: Supplies[];
-}

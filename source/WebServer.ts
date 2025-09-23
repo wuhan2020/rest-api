@@ -6,19 +6,8 @@ import { useKoaServer } from 'routing-controllers';
 
 import { dataSource, APP_SECRET, User } from './model/DataSource';
 import { AuthenticatedContext } from './utility';
-import {
-    MainController,
-    SessionController,
-    RoleController,
-    UserController,
-    FileController,
-    RequirementController,
-    LogisticsController,
-    HotelController,
-    VendorController,
-    ClinicController,
-    DonationRecipientController,
-} from './controller';
+import { controllers, swagger, mocker } from './controller';
+import { UserController } from './controller';
 
 const { PORT, LEANCLOUD_APP_PORT: appPort } = process.env;
 
@@ -26,13 +15,18 @@ const port = parseInt(appPort || PORT || '8080');
 
 console.time('Server boot');
 
-const app = new Koa().use(Logger()).use(
-    jwt({
+const app = new Koa()
+    .use(Logger())
+    .use(swagger({ exposeSpec: true }))
+    .use(jwt({
         secret: APP_SECRET,
         passthrough: true,
         key: 'jwtdata',
-    }),
-);
+    }));
+
+if (process.env.NODE_ENV !== 'production') {
+    app.use(mocker());
+}
 
 useKoaServer(app, {
     cors: { credentials: true },
@@ -40,40 +34,15 @@ useKoaServer(app, {
         const ctx = context as AuthenticatedContext;
         return !!(ctx.state.jwtdata || ctx.state.user);
     },
-    currentUserChecker: async ({ context }) => {
-        const ctx = context as AuthenticatedContext;
-        if (ctx.state.user) return ctx.state.user;
-
-        if (ctx.state.jwtdata) {
-            const userRepo = dataSource.getRepository(User);
-            const foundUser = await userRepo.findOne({
-                where: { id: ctx.state.jwtdata.id },
-            });
-            ctx.state.user = foundUser || undefined;
-        }
-
-        return ctx.state.user;
-    },
-    controllers: [
-        DonationRecipientController,
-        ClinicController,
-        VendorController,
-        HotelController,
-        LogisticsController,
-        RequirementController,
-        FileController,
-        UserController,
-        RoleController,
-        SessionController,
-        MainController,
-    ],
+    currentUserChecker: ({ context }) => UserController.getSession({ context }),
+    controllers
 });
 
 dataSource
     .initialize()
     .then(() =>
         app.listen(port, () => {
-            console.log('HTTP Server runs at http://localhost:' + port);
+            console.log(`HTTP Server runs at http://localhost:${port}`);
             console.timeEnd('Server boot');
         }),
     )

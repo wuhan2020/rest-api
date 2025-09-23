@@ -53,26 +53,3 @@ export class Clinic extends UserBase {
     @ManyToOne(() => User)
     verifier?: User;
 }
-
-export class ClinicModel {
-    @Length(2)
-    name: string;
-
-    @IsMilitaryTime()
-    startTime: string;
-
-    @IsMilitaryTime()
-    endTime: string;
-
-    @IsString()
-    @IsOptional()
-    url?: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-}

@@ -79,35 +79,4 @@ export class SuppliesRequirement extends UserBase {
     verifier?: User;
 }
 
-export class RequirementModel {
-    @Length(5)
-    hospital: string;
 
-    @Length(3)
-    province: string;
-
-    @Length(3)
-    city: string;
-
-    @Length(2)
-    district: string;
-
-    @Length(5)
-    address: string;
-
-    coords: GeoCoord;
-
-    @IsOptional()
-    url?: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-
-    @IsArray()
-    supplies: Supplies[];
-}

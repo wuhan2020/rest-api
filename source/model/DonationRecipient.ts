@@ -55,21 +55,4 @@ export class DonationRecipient extends UserBase {
     verifier?: User;
 }
 
-export class DonationRecipientModel {
-    @Length(2)
-    name: string;
 
-    @IsArray()
-    accounts: BankAccount[];
-
-    @IsOptional()
-    url?: string;
-
-    @IsOptional()
-    @IsArray()
-    contacts?: Contact[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-}

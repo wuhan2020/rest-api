@@ -54,20 +54,4 @@ export class Logistics extends UserBase {
     verifier?: User;
 }
 
-export class LogisticsModel {
-    @Length(3)
-    name: string;
 
-    @IsUrl()
-    url: string;
-
-    @IsArray()
-    contacts: Contact[];
-
-    @IsArray()
-    serviceArea: ServiceArea[];
-
-    @IsOptional()
-    @IsString()
-    remark?: string;
-}
