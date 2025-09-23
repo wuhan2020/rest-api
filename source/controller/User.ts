@@ -8,7 +8,6 @@ import {
     ForbiddenError,
     Get,
     HttpCode,
-    HttpError,
     JsonController,
     OnNull,
     OnUndefined,
@@ -53,7 +52,7 @@ export class UserController {
 
         if (ctx.state.jwtdata) {
             // Return the user data from JWT for @CurrentUser to work
-            return ctx.state.jwtdata as any;
+            return ctx.state.jwtdata as User;
         }
 
         return null;
@@ -105,8 +104,6 @@ export class UserController {
     async getList(
         @QueryParams() filter: UserFilter
     ) {
-        // For now, return empty implementation
-        // TODO: Implement proper filtering based on UserFilter
         const [list, count] = await store.findAndCount({
             take: filter.pageSize || 10,
             skip: ((filter.pageIndex || 1) - 1) * (filter.pageSize || 10)
