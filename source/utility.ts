@@ -1,5 +1,5 @@
 import { Context } from 'koa';
-import { FindOptionsWhere, ILike, Repository, FindManyOptions } from 'typeorm';
+import { FindOptionsWhere, ILike, Repository, FindManyOptions, FindOptionsOrder } from 'typeorm';
 import jwt from 'jsonwebtoken';
 import { User } from './model/User';
 import { APP_SECRET } from './model/DataSource';
@@ -22,7 +22,7 @@ interface PageQuery<T> {
     index?: number;
     equal?: FindOptionsWhere<T>;
     where?: FindOptionsWhere<T>;
-    order?: Record<string, 'ASC' | 'DESC'>;
+    order?: FindOptionsOrder<T>;
     relations?: string[];
 }
 
@@ -38,7 +38,7 @@ export async function queryPage<T>(
         index = 1,
         equal,
         where,
-        order = {} as Record<string, 'ASC' | 'DESC'>,
+        order,
         relations = [],
     }: PageQuery<T>,
 ): Promise<PageResult<T>> {
@@ -48,9 +48,12 @@ export async function queryPage<T>(
         skip,
         take: size,
         where: where || equal,
-        order,
         relations,
     };
+
+    if (order) {
+        queryOptions.order = order;
+    }
 
     const [data, count] = await repository.findAndCount(queryOptions);
 

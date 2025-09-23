@@ -1,4 +1,3 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
 import {
     JsonController,
     Post,
@@ -12,111 +11,160 @@ import {
     Put,
     Patch,
     OnUndefined,
-    Delete
+    Delete,
+    NotFoundError
 } from 'routing-controllers';
 
-import { LCContext, queryPage } from '../utility';
-import { LogisticsModel } from '../model';
-import { RoleController } from './Role';
-
-export class Logistics extends LCObject {}
+import { AuthenticatedContext, queryPage } from '../utility';
+import { LogisticsModel, Logistics, dataSource, UserRole } from '../model';
 
 @JsonController('/logistics')
 export class LogisticsController {
     @Post()
     @Authorized()
     async create(
-        @Ctx() { currentUser: user }: LCContext,
+        @Ctx() { state: { user } }: AuthenticatedContext,
         @Body() { name, ...rest }: LogisticsModel
     ) {
-        let logistics = await new Query(Logistics)
-            .equalTo('name', name)
-            .first();
+        if (!user) {
+            throw new ForbiddenError('User not authenticated');
+        }
 
-        if (logistics)
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        const existingLogistics = await logisticsRepo.findOne({ 
+            where: { name } 
+        });
+
+        if (existingLogistics) {
             throw new ForbiddenError(
                 '同一物流公司不能重复发布，请联系原发布者修改'
             );
+        }
 
-        const acl = new ACL();
+        const logistics = new Logistics();
+        Object.assign(logistics, rest);
+        logistics.name = name;
+        logistics.createdBy = user;
+        logistics.verified = false;
 
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(user, true),
-            acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
-
-        logistics = await new Logistics()
-            .setACL(acl)
-            .save({ ...rest, name, creator: user, verified: false }, { user });
-
-        return logistics.toJSON();
+        const savedLogistics = await logisticsRepo.save(logistics);
+        return savedLogistics;
     }
 
     @Get()
     getList(
         @QueryParam('verified') verified: boolean,
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
+        @QueryParam('pageSize') size: number = 10,
+        @QueryParam('pageIndex') index: number = 1
     ) {
-        return queryPage(Logistics, {
-            include: ['creator', 'verifier'],
-            equal: { verified },
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        return queryPage(logisticsRepo, {
             size,
-            index
+            index,
+            where: verified !== undefined ? { verified } : {},
+            relations: ['createdBy', 'verifier'],
+            order: { updatedAt: 'DESC' }
         });
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: string) {
-        const logistics = await new Query(Logistics).get(id);
+    async getOne(@Param('id') id: number) {
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        const logistics = await logisticsRepo.findOne({
+            where: { id },
+            relations: ['createdBy', 'verifier']
+        });
 
-        return logistics.toJSON();
+        if (!logistics) {
+            throw new NotFoundError('Logistics not found');
+        }
+
+        return logistics;
     }
 
     @Put('/:id')
     @Authorized()
     async edit(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
+        @Ctx() { state: { user } }: AuthenticatedContext,
+        @Param('id') id: number,
         @Body() { name, ...rest }: LogisticsModel
     ) {
-        let logistics = LCObject.createWithoutData('Logistics', id);
+        if (!user) {
+            throw new ForbiddenError('User not authenticated');
+        }
 
-        await logistics.save(
-            { ...rest, verified: false, verifier: null },
-            { user }
-        );
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        const logistics = await logisticsRepo.findOne({ where: { id } });
+        if (!logistics) {
+            throw new NotFoundError('Logistics not found');
+        }
 
-        logistics = await new Query(Logistics).include('creator').get(id);
+        Object.assign(logistics, rest);
+        logistics.name = name;
+        logistics.verified = false;
+        logistics.verifier = undefined;
+        logistics.updatedBy = user;
 
-        return logistics.toJSON();
+        const updatedLogistics = await logisticsRepo.save(logistics);
+        return updatedLogistics;
     }
 
     @Patch('/:id')
     @Authorized()
     @OnUndefined(204)
     async verify(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
+        @Ctx() { state: { user } }: AuthenticatedContext,
+        @Param('id') id: number,
         @Body() { verified }: { verified: boolean }
     ) {
-        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
+        if (!user || !user.roles.includes(UserRole.Admin)) {
+            throw new ForbiddenError('Admin access required');
+        }
 
-        await LCObject.createWithoutData('Logistics', id).save(
-            { verified, verifier: user },
-            { user }
-        );
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        const logistics = await logisticsRepo.findOne({ where: { id } });
+        if (!logistics) {
+            throw new NotFoundError('Logistics not found');
+        }
+
+        logistics.verified = verified;
+        logistics.verifier = user;
+        logistics.updatedBy = user;
+
+        await logisticsRepo.save(logistics);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
     async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
+        @Ctx() { state: { user } }: AuthenticatedContext,
+        @Param('id') id: number
     ) {
-        await LCObject.createWithoutData('Logistics', id).destroy({
-            user
+        if (!user) {
+            throw new ForbiddenError('User not authenticated');
+        }
+
+        const logisticsRepo = dataSource.getRepository(Logistics);
+        
+        const logistics = await logisticsRepo.findOne({ 
+            where: { id },
+            relations: ['createdBy']
         });
+        
+        if (!logistics) {
+            throw new NotFoundError('Logistics not found');
+        }
+
+        if (logistics.createdBy?.id !== user.id && !user.roles.includes(UserRole.Admin)) {
+            throw new ForbiddenError('Permission denied');
+        }
+
+        await logisticsRepo.softRemove(logistics);
     }
 }

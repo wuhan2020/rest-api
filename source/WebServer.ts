@@ -4,7 +4,7 @@ import Logger from 'koa-logger';
 import jwt from 'koa-jwt';
 import { useKoaServer } from 'routing-controllers';
 
-import { dataSource, APP_SECRET } from './model/DataSource';
+import { dataSource, APP_SECRET, User } from './model/DataSource';
 import { AuthenticatedContext } from './utility';
 import {
     MainController,
@@ -45,10 +45,11 @@ useKoaServer(app, {
         if (ctx.state.user) return ctx.state.user;
 
         if (ctx.state.jwtdata) {
-            const userRepo = dataSource.getRepository('User');
-            ctx.state.user = await userRepo.findOne({
+            const userRepo = dataSource.getRepository(User);
+            const foundUser = await userRepo.findOne({
                 where: { id: ctx.state.jwtdata.id },
             });
+            ctx.state.user = foundUser || undefined;
         }
 
         return ctx.state.user;
