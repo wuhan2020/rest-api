@@ -1,83 +1,88 @@
 import { Context } from 'koa';
-import { User, Query, AuthOptions, Queriable } from 'leanengine';
+import { FindOptionsWhere, ILike, Repository, FindManyOptions } from 'typeorm';
+import jwt from 'jsonwebtoken';
+import { User } from './model/User';
+import { APP_SECRET } from './model/DataSource';
 
-export interface LCUser extends User {
-    logOut(): any;
+interface JWTPayload {
+    id: number;
+    name: string;
+    roles: string[];
 }
 
-export interface LCContext extends Context {
-    saveCurrentUser(user: User): any;
-    currentUser: LCUser;
-    clearCurrentUser(): any;
+export interface AuthenticatedContext extends Context {
+    state: {
+        user?: User;
+        jwtdata?: JWTPayload;
+    };
 }
 
-interface Condition {
-    [key: string]: any;
-}
-
-interface PageQuery {
+interface PageQuery<T> {
     size?: number;
     index?: number;
-    equal?: Condition;
-    less?: Condition;
-    greater?: Condition;
-    contains?: Condition;
-    exists?: string[];
-    ascend?: string[];
-    descend?: string[];
-    select?: string[];
-    include?: string[];
-    auth?: AuthOptions;
+    equal?: FindOptionsWhere<T>;
+    where?: FindOptionsWhere<T>;
+    order?: Record<string, 'ASC' | 'DESC'>;
+    relations?: string[];
 }
 
-export async function queryPage<T extends Queriable>(
-    model: new (...args: any[]) => T,
+export interface PageResult<T> {
+    data: T[];
+    count: number;
+}
+
+export async function queryPage<T>(
+    repository: Repository<T>,
     {
         size = 10,
         index = 1,
         equal,
-        less,
-        greater,
-        contains,
-        exists = [],
-        ascend = [],
-        descend = ['updatedAt', 'createdAt'],
-        select = [],
-        include = [],
-        auth
-    }: PageQuery
-) {
-    const query = new Query<T>(model);
+        where,
+        order = {} as Record<string, 'ASC' | 'DESC'>,
+        relations = [],
+    }: PageQuery<T>,
+): Promise<PageResult<T>> {
+    const skip = size * (index - 1);
 
-    for (const key in equal)
-        if (equal[key] != null) query.equalTo(key, equal[key]);
+    const queryOptions: FindManyOptions<T> = {
+        skip,
+        take: size,
+        where: where || equal,
+        order,
+        relations,
+    };
 
-    for (const key in less)
-        if (less[key] != null) query.lessThanOrEqualTo(key, less[key]);
-
-    for (const key in greater)
-        if (greater[key] != null) query.greaterThanOrEqualTo(key, greater[key]);
-
-    for (const key in contains)
-        if (contains[key] != null) query.contains(key, contains[key]);
-
-    for (const key of exists) query.exists(key);
-
-    const count = await query.count(auth);
-
-    if (!count) return { data: [], count };
-
-    for (const key of ascend) query.addAscending(key);
-
-    for (const key of descend) query.addDescending(key);
-
-    query.limit(size).skip(size * --index);
-
-    if (select[0]) query.select(...select);
-
-    if (include[0]) query.include(...include);
-
-    const data = (await query.find(auth)).map(item => item.toJSON());
+    const [data, count] = await repository.findAndCount(queryOptions);
 
     return { data, count };
+}
+
+export function searchConditionOf<T>(
+    keys: (keyof T)[],
+    keywords = '',
+    filter?: FindOptionsWhere<T>,
+) {
+    return keywords
+        ? keys.map((key) => ({ [key]: ILike(`%${keywords}%`), ...filter }))
+        : filter;
+}
+
+export function generateToken(user: User): string {
+    return jwt.sign(
+        {
+            id: user.id,
+            name: user.name,
+            roles: user.roles,
+        },
+        APP_SECRET,
+        { expiresIn: '7d' },
+    );
+}
+
+export function verifyToken(token: string): JWTPayload | null {
+    try {
+        return jwt.verify(token, APP_SECRET) as JWTPayload;
+    } catch {
+        return null;
+    }
 }

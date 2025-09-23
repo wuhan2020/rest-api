@@ -1,10 +1,9 @@
 import { Type } from 'class-transformer';
 import {
     Length,
-    IsMilitaryTime,
+    IsArray,
     IsString,
     IsOptional,
-    IsArray,
     IsBoolean,
     ValidateNested,
 } from 'class-validator';
@@ -13,20 +12,22 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 import { UserBase, User } from './User';
 import { Contact } from './Place';
 
+export interface BankAccount {
+    name: string;
+    number: string;
+    bank: string;
+}
+
 @Entity()
-export class Clinic extends UserBase {
+export class DonationRecipient extends UserBase {
     @IsString()
     @Length(2)
     @Column()
     name: string;
 
-    @IsMilitaryTime()
-    @Column()
-    startTime: string;
-
-    @IsMilitaryTime()
-    @Column()
-    endTime: string;
+    @IsArray()
+    @Column('simple-json')
+    accounts: BankAccount[];
 
     @IsString()
     @IsOptional()
@@ -54,17 +55,13 @@ export class Clinic extends UserBase {
     verifier?: User;
 }
 
-export class ClinicModel {
+export class DonationRecipientModel {
     @Length(2)
     name: string;
 
-    @IsMilitaryTime()
-    startTime: string;
+    @IsArray()
+    accounts: BankAccount[];
 
-    @IsMilitaryTime()
-    endTime: string;
-
-    @IsString()
     @IsOptional()
     url?: string;
 
