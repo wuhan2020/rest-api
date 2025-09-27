@@ -1,93 +1,39 @@
-import { Context } from 'koa';
-import { FindOptionsWhere, ILike, Repository, FindManyOptions, FindOptionsOrder } from 'typeorm';
-import jwt from 'jsonwebtoken';
-import { User } from './model/User';
-import { APP_SECRET, NODE_ENV } from './model/DataSource';
+import { S3Client } from '@aws-sdk/client-s3';
+import { config } from 'dotenv';
+import { DataObject } from 'mobx-restful';
+import { FindOptionsWhere, ILike } from 'typeorm';
+
+config({ path: [`.env.${process.env.NODE_ENV}.local`, '.env.local', '.env'] });
+
+export const {
+    NODE_ENV,
+    HTTP_PROXY,
+    PORT = 8080,
+    DATABASE_URL,
+    APP_SECRET,
+    AWS_S3_END_POINT,
+    AWS_S3_BUCKET,
+    AWS_S3_ACCESS_KEY_ID,
+    AWS_S3_SECRET_ACCESS_KEY,
+    AWS_S3_PUBLIC_HOST
+} = process.env;
 
 export const isProduct = NODE_ENV === 'production';
 
-interface JWTPayload {
-    id: number;
-    name: string;
-    roles: string[];
-}
-
-export interface AuthenticatedContext extends Context {
-    state: {
-        user?: User;
-        jwtdata?: JWTPayload;
-    };
-}
-
-interface PageQuery<T> {
-    size?: number;
-    index?: number;
-    equal?: FindOptionsWhere<T>;
-    where?: FindOptionsWhere<T>;
-    order?: FindOptionsOrder<T>;
-    relations?: string[];
-}
-
-export interface PageResult<T> {
-    data: T[];
-    count: number;
-}
-
-export async function queryPage<T>(
-    repository: Repository<T>,
-    {
-        size = 10,
-        index = 1,
-        equal,
-        where,
-        order,
-        relations = [],
-    }: PageQuery<T>,
-): Promise<PageResult<T>> {
-    const skip = size * (index - 1);
-
-    const queryOptions: FindManyOptions<T> = {
-        skip,
-        take: size,
-        where: where || equal,
-        relations,
-    };
-
-    if (order) {
-        queryOptions.order = order;
-    }
-
-    const [data, count] = await repository.findAndCount(queryOptions);
-
-    return { data, count };
-}
-
-export function searchConditionOf<T>(
+export const searchConditionOf = <T extends DataObject>(
     keys: (keyof T)[],
     keywords = '',
-    filter?: FindOptionsWhere<T>,
-) {
-    return keywords
-        ? keys.map((key) => ({ [key]: ILike(`%${keywords}%`), ...filter }))
+    filter?: FindOptionsWhere<T>
+) =>
+    keywords
+        ? keys.map(key => ({ [key]: ILike(`%${keywords}%`), ...filter }))
         : filter;
-}
 
-export function generateToken(user: User): string {
-    return jwt.sign(
-        {
-            id: user.id,
-            name: user.name,
-            roles: user.roles,
-        },
-        APP_SECRET,
-        { expiresIn: '7d' },
-    );
-}
-
-export function verifyToken(token: string): JWTPayload | null {
-    try {
-        return jwt.verify(token, APP_SECRET) as JWTPayload;
-    } catch {
-        return null;
+export const s3Client = new S3Client({
+    region: 'auto',
+    endpoint: AWS_S3_END_POINT,
+    credentials: {
+        accessKeyId: AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: AWS_S3_SECRET_ACCESS_KEY
     }
-}
+});

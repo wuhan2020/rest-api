@@ -7,27 +7,28 @@ import {
     IsMobilePhone,
     IsOptional,
     IsString,
+    IsStrongPassword,
     IsUrl,
-    IsPositive,
-    Length,
     Min,
-    ValidateNested,
+    ValidateNested
 } from 'class-validator';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { JsonWebTokenError } from 'jsonwebtoken';
+import { ParameterizedContext } from 'koa';
 import { NewData } from 'mobx-restful';
+import { Column, Entity, ManyToOne } from 'typeorm';
 
 import { Base, BaseFilter, InputData, ListChunk } from './Base';
 
 export enum Gender {
     Female = 0,
     Male = 1,
-    Other = 2,
+    Other = 2
 }
 
-export enum UserRole {
-    Admin = 'Admin',
-    Manager = 'Manager',
-    User = 'User',
+export enum Role {
+    Administrator,
+    Manager,
+    Client
 }
 
 export type UserInputData<T> = NewData<Omit<T, keyof UserBase>, Base>;
@@ -37,9 +38,9 @@ export class UserFilter extends BaseFilter implements Partial<InputData<User>> {
     @IsOptional()
     email?: string;
 
-    @IsMobilePhone('zh-CN')
+    @IsMobilePhone()
     @IsOptional()
-    mobilePhoneNumber?: string;
+    mobilePhone?: string;
 
     @IsString()
     @IsOptional()
@@ -60,6 +61,28 @@ export class UserListChunk implements ListChunk<User> {
     list: User[];
 }
 
+export class SignInData implements Required<Pick<User, 'mobilePhone' | 'password'>> {
+    @IsMobilePhone()
+    mobilePhone: string;
+
+    @IsString()
+    password: string;
+}
+
+export class SignUpData
+    extends SignInData
+    implements Required<Pick<User, 'name' | 'mobilePhone' | 'password'>>
+{
+    @IsString()
+    name: string;
+}
+
+export interface JWTAction {
+    context?: ParameterizedContext<
+        { jwtOriginalError: JsonWebTokenError } | { user: User }
+    >;
+}
+
 @Entity()
 export class User extends Base {
     @IsString()
@@ -78,23 +101,23 @@ export class User extends Base {
 
     @IsEmail()
     @IsOptional()
-    @Column({ unique: true, nullable: true })
+    @Column({ nullable: true })
     email?: string;
 
-    @IsMobilePhone('zh-CN')
-    @IsOptional()
-    @Column({ unique: true, nullable: true })
-    mobilePhoneNumber?: string;
-
-    @IsPositive()
+    @IsMobilePhone()
     @IsOptional()
     @Column({ nullable: true })
-    age?: number;
+    mobilePhone?: string;
 
-    @IsEnum(UserRole, { each: true })
+    @IsStrongPassword()
     @IsOptional()
-    @Column('simple-json', { default: [] })
-    roles: UserRole[];
+    @Column({ nullable: true, select: false })
+    password?: string;
+
+    @IsEnum(Role, { each: true })
+    @IsOptional()
+    @Column('simple-json')
+    roles: Role[];
 
     @IsJWT()
     @IsOptional()
@@ -106,7 +129,7 @@ export abstract class UserBase extends Base {
     @ValidateNested()
     @IsOptional()
     @ManyToOne(() => User)
-    createdBy?: User;
+    createdBy: User;
 
     @Type(() => User)
     @ValidateNested()

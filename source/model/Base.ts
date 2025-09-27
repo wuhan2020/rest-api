@@ -1,17 +1,11 @@
 import { Type } from 'class-transformer';
-import {
-    IsDateString,
-    IsInt,
-    IsOptional,
-    IsString,
-    Min,
-} from 'class-validator';
+import { IsDateString, IsInt, IsOptional, IsString, Min } from 'class-validator';
 import { NewData } from 'mobx-restful';
 import {
     CreateDateColumn,
     DeleteDateColumn,
     PrimaryGeneratedColumn,
-    UpdateDateColumn,
+    UpdateDateColumn
 } from 'typeorm';
 import { isEmpty } from 'web-utility';
 
@@ -41,16 +35,12 @@ export interface ListChunk<T> {
 }
 
 export abstract class Base {
-    static from<T extends Base = Base>(
-        idOrData: number | object,
-    ): T | undefined {
+    static from<T extends Base = Base>(idOrData: number | object): T | undefined {
         if (isEmpty(idOrData)) return;
 
         const id = +idOrData,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
             instance = Reflect.construct(this, []);
 
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return Object.assign(instance, isNaN(id) ? idOrData : { id });
     }
 
@@ -62,15 +52,15 @@ export abstract class Base {
     @IsDateString()
     @IsOptional()
     @CreateDateColumn()
-    createdAt: Date;
+    createdAt: string;
 
     @IsDateString()
     @IsOptional()
     @UpdateDateColumn()
-    updatedAt: Date;
+    updatedAt: string;
 
     @IsDateString()
     @IsOptional()
     @DeleteDateColumn({ select: false })
-    deletedAt?: Date;
+    deletedAt?: string;
 }
