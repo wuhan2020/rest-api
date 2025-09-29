@@ -4,17 +4,31 @@ import { Column, Entity, ViewColumn, ViewEntity } from 'typeorm';
 
 import { Base, BaseFilter, InputData, ListChunk } from './Base';
 import { User, UserBase } from './User';
+import { SuppliesRequirement } from './Supplies';
+import { Clinic } from './Clinic';
+import { Hotel } from './Hotel';
+import { Logistics } from './Logistics';
+import { Vendor } from './Vendor';
+import { DonationRecipient } from './Donation';
 
 export enum Operation {
     Create = 'create',
     Update = 'update',
-    Delete = 'delete'
+    Delete = 'delete',
 }
 
-export const LogableTable = { User };
+export const LogableTable = {
+    User,
+    SuppliesRequirement,
+    Clinic,
+    Hotel,
+    Logistics,
+    Vendor,
+    DonationRecipient,
+};
 
 const LogableTableEnum = Object.fromEntries(
-    Object.entries(LogableTable).map(([key]) => [key, key])
+    Object.entries(LogableTable).map(([key]) => [key, key]),
 );
 
 @Entity()
@@ -54,13 +68,13 @@ export class ActivityLogListChunk implements ListChunk<ActivityLog> {
 }
 
 @ViewEntity({
-    expression: connection =>
+    expression: (connection) =>
         connection
             .createQueryBuilder()
             .from(ActivityLog, 'al')
             .groupBy('al.createdBy')
             .select('al.createdBy.id', 'userId')
-            .addSelect('COUNT(al.id)', 'score')
+            .addSelect('COUNT(al.id)', 'score'),
 })
 export class UserRank {
     @IsInt()

@@ -2,7 +2,7 @@ import { Type } from 'class-transformer';
 import {
     Length,
     IsUrl,
-    IsArray,
+    IsEnum,
     IsOptional,
     IsString,
     IsBoolean,
@@ -13,9 +13,22 @@ import { Column, Entity, ManyToOne } from 'typeorm';
 import { UserBase, User } from './User';
 import { Contact } from './Place';
 
-export interface ServiceArea {
+export enum LogisticsDirection {
+    in = 'in',
+    out = 'out',
+    both = 'both',
+}
+
+export class ServiceArea {
+    @IsString()
     city: string;
-    direction: 'in' | 'out' | 'both';
+
+    @IsEnum(LogisticsDirection)
+    @Column('simple-enum', { enum: LogisticsDirection })
+    direction: LogisticsDirection;
+
+    @IsBoolean()
+    @Column({ default: false })
     personal: boolean;
 }
 
@@ -23,18 +36,20 @@ export interface ServiceArea {
 export class Logistics extends UserBase {
     @IsString()
     @Length(3)
-    @Column()
+    @Column({ unique: true })
     name: string;
 
     @IsUrl()
     @Column()
     url: string;
 
-    @IsArray()
+    @Type(() => Contact)
+    @ValidateNested({ each: true })
     @Column('simple-json')
     contacts: Contact[];
 
-    @IsArray()
+    @Type(() => ServiceArea)
+    @ValidateNested({ each: true })
     @Column('simple-json')
     serviceArea: ServiceArea[];
 
@@ -53,5 +68,3 @@ export class Logistics extends UserBase {
     @ManyToOne(() => User)
     verifier?: User;
 }
-
-

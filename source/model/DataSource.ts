@@ -10,7 +10,8 @@ import { Logistics } from './Logistics';
 import { Clinic } from './Clinic';
 import { Hotel } from './Hotel';
 import { SuppliesRequirement } from './Supplies';
-import { DonationRecipient } from './DonationRecipient';
+import { DonationRecipient } from './Donation';
+import { EpidemicStatistic, News, Overall, Rumor } from './Epidemic';
 
 const { ssl, host, port, user, password, database } = isProduct
     ? parse(DATABASE_URL)
@@ -25,6 +26,10 @@ const entities = [
     Hotel,
     SuppliesRequirement,
     DonationRecipient,
+    Rumor,
+    News,
+    EpidemicStatistic,
+    Overall,
 ];
 
 const commonOptions: Pick<
@@ -34,7 +39,7 @@ const commonOptions: Pick<
     logging: true,
     synchronize: true,
     entities,
-    migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
+    migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`],
 };
 
 export const dataSource = isProduct
@@ -46,12 +51,12 @@ export const dataSource = isProduct
           username: user,
           password,
           database,
-          ...commonOptions
+          ...commonOptions,
       })
     : new DataSource({
           type: 'better-sqlite3',
           database: '.data/test.db',
-          ...commonOptions
+          ...commonOptions,
       });
 
 export * from './ActivityLog';
@@ -64,4 +69,5 @@ export * from './Logistics';
 export * from './Clinic';
 export * from './Hotel';
 export * from './Supplies';
-export * from './DonationRecipient';
+export * from './Donation';
+export * from './Epidemic';

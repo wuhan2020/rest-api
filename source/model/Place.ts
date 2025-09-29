@@ -1,48 +1,87 @@
+import { Type } from 'class-transformer';
 import {
     Length,
-    IsObject,
+    IsPhoneNumber,
     IsUrl,
     IsOptional,
-    IsArray,
-    IsString
+    IsLatitude,
+    IsLongitude,
+    IsString,
+    ValidateNested,
+    IsBoolean,
 } from 'class-validator';
+import { Column, ManyToOne } from 'typeorm';
 
-export interface GeoCoord {
+import { User, UserBase } from './User';
+
+export class GeoCoord {
+    @IsLatitude()
     latitude: number;
+
+    @IsLongitude()
     longitude: number;
 }
 
-export interface Contact {
+export class Contact {
+    @IsString()
     name: string;
+
+    @IsPhoneNumber()
     phone: string;
 }
 
-export class OrganizationModel {
+export abstract class OrganizationBase extends UserBase {
+    @IsString()
+    @Length(2)
+    @Column({ unique: true })
+    name: string;
+
     @IsUrl()
-    url: string;
+    @IsOptional()
+    @Column({ nullable: true })
+    url?: string;
 
     @IsOptional()
-    @IsArray()
+    @Type(() => Contact)
+    @ValidateNested({ each: true })
+    @Column('simple-json', { nullable: true })
     contacts?: Contact[];
 
     @IsOptional()
     @IsString()
+    @Column({ nullable: true })
     remark?: string;
+
+    @IsBoolean()
+    @Column({ default: false })
+    verified: boolean;
+
+    @Type(() => User)
+    @ValidateNested()
+    @IsOptional()
+    @ManyToOne(() => User)
+    verifier?: User;
 }
 
-export class PlaceModel extends OrganizationModel {
+export abstract class PlaceBase extends OrganizationBase {
     @Length(3)
+    @Column()
     province: string;
 
     @Length(3)
+    @Column()
     city: string;
 
     @Length(2)
+    @Column()
     district: string;
 
     @Length(5)
+    @Column()
     address: string;
 
-    @IsObject()
+    @Type(() => GeoCoord)
+    @ValidateNested()
+    @Column('simple-json')
     coords: GeoCoord;
 }
