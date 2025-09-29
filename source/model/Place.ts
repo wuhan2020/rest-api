@@ -10,9 +10,10 @@ import {
     ValidateNested,
     IsBoolean,
 } from 'class-validator';
-import { Column, ManyToOne } from 'typeorm';
+import { Column } from 'typeorm';
 
-import { User, UserBase } from './User';
+import { InputData } from './Base';
+import { UserBaseFilter, VerificationBase } from './User';
 
 export class GeoCoord {
     @IsLatitude()
@@ -30,7 +31,7 @@ export class Contact {
     phone: string;
 }
 
-export abstract class OrganizationBase extends UserBase {
+export abstract class OrganizationBase extends VerificationBase {
     @IsString()
     @Length(2)
     @Column({ unique: true })
@@ -51,17 +52,8 @@ export abstract class OrganizationBase extends UserBase {
     @IsString()
     @Column({ nullable: true })
     remark?: string;
-
-    @IsBoolean()
-    @Column({ default: false })
-    verified: boolean;
-
-    @Type(() => User)
-    @ValidateNested()
-    @IsOptional()
-    @ManyToOne(() => User)
-    verifier?: User;
 }
+
 
 export abstract class PlaceBase extends OrganizationBase {
     @Length(3)

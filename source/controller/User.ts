@@ -27,7 +27,7 @@ import {
     PhoneSignInData,
     JWTAction
 } from '../model';
-import { ActivityLogController } from './ActivityLog';
+import { activityLogService } from '../service/ActivityLog';
 
 const userStore = dataSource.getRepository(User);
 
@@ -52,7 +52,7 @@ export class UserController {
             password: UserController.encrypt(data.password),
             roles: [sum ? UserRole.Client : UserRole.Admin]
         });
-        await ActivityLogController.logCreate(user, 'User', user.id);
+        await activityLogService.logCreate(user, 'User', user.id);
 
         return user;
     }
@@ -107,7 +107,7 @@ export class UserController {
             password: password && UserController.encrypt(password),
             id
         });
-        await ActivityLogController.logUpdate(updatedBy, 'User', id);
+        await activityLogService.logUpdate(updatedBy, 'User', id);
 
         return UserController.sign(saved);
     }

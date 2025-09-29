@@ -1,16 +1,19 @@
 import { Type } from 'class-transformer';
 import {
-    Length,
     IsUrl,
     IsEnum,
     IsOptional,
+    IsInt,
+    Min,
     IsString,
+    Length,
     IsBoolean,
     ValidateNested,
 } from 'class-validator';
-import { Column, Entity, ManyToOne } from 'typeorm';
+import { Column, Entity } from 'typeorm';
 
-import { UserBase, User } from './User';
+import { ListChunk } from './Base';
+import { VerificationBase } from './User';
 import { Contact } from './Place';
 
 export enum LogisticsDirection {
@@ -33,7 +36,7 @@ export class ServiceArea {
 }
 
 @Entity()
-export class Logistics extends UserBase {
+export class Logistics extends VerificationBase {
     @IsString()
     @Length(3)
     @Column({ unique: true })
@@ -57,14 +60,14 @@ export class Logistics extends UserBase {
     @IsString()
     @Column({ nullable: true })
     remark?: string;
+}
 
-    @IsBoolean()
-    @Column({ default: false })
-    verified: boolean;
+export class LogisticsListChunk implements ListChunk<Logistics> {
+    @IsInt()
+    @Min(0)
+    count: number;
 
-    @Type(() => User)
-    @ValidateNested()
-    @IsOptional()
-    @ManyToOne(() => User)
-    verifier?: User;
+    @Type(() => Logistics)
+    @ValidateNested({ each: true })
+    list: Logistics[];
 }

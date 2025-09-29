@@ -10,37 +10,37 @@ export class EpidemicStatistic {
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     continentName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     continentEnglishName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     countryName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     countryEnglishName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     provinceName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     provinceEnglishName?: string;
 
     @IsPostalCode()
     @IsOptional()
-    @Column('text', { name: 'province_zipCode', nullable: true })
+    @Column({ name: 'province_zipCode', nullable: true })
     provinceZipCode?: string;
 
     @IsInt()
@@ -69,22 +69,22 @@ export class EpidemicStatistic {
 
     @IsDateString()
     @IsOptional()
-    @Column('timestamp without time zone', { nullable: true })
+    @Column('date', { nullable: true })
     updateTime?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     cityName?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     cityEnglishName?: string;
 
     @IsPostalCode()
     @IsOptional()
-    @Column('text', { name: 'city_zipCode', nullable: true })
+    @Column({ name: 'city_zipCode', nullable: true })
     cityZipCode?: string;
 
     @IsInt()

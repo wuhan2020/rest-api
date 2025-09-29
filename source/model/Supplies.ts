@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import { IsEnum, IsString, IsInt, Min, ValidateNested } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
+import { ListChunk } from './Base';
 import { PlaceBase } from './Place';
 
 export enum SuppliesType {
@@ -34,4 +35,14 @@ export class SuppliesRequirement extends PlaceBase {
     @ValidateNested({ each: true })
     @Column('simple-json')
     supplies: Supplies[];
+}
+
+export class SuppliesRequirementListChunk implements ListChunk<SuppliesRequirement> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => SuppliesRequirement)
+    @ValidateNested({ each: true })
+    list: SuppliesRequirement[];
 }

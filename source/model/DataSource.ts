@@ -64,6 +64,7 @@ export * from './Base';
 export * from './File';
 export * from './User';
 export * from './Session';
+export * from './Place';
 export * from './Vendor';
 export * from './Logistics';
 export * from './Clinic';

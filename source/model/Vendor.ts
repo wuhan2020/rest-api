@@ -1,7 +1,8 @@
 import { Type } from 'class-transformer';
-import { Length, IsString, ValidateNested } from 'class-validator';
+import { IsInt, Min, IsString, Length, ValidateNested } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
+import { ListChunk } from './Base';
 import { PlaceBase } from './Place';
 import { Supplies } from './Supplies';
 
@@ -16,4 +17,14 @@ export class Vendor extends PlaceBase {
     @ValidateNested({ each: true })
     @Column('simple-json')
     supplies: Supplies[];
+}
+
+export class VendorListChunk implements ListChunk<Vendor> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => Vendor)
+    @ValidateNested({ each: true })
+    list: Vendor[];
 }

@@ -11,7 +11,8 @@ import {
     IsUrl,
     IsStrongPassword,
     Min,
-    ValidateNested
+    ValidateNested,
+    IsBoolean,
 } from 'class-validator';
 import { JsonWebTokenError } from 'jsonwebtoken';
 import { ParameterizedContext } from 'koa';
@@ -23,13 +24,13 @@ import { Base, BaseFilter, InputData, ListChunk } from './Base';
 export enum Gender {
     Female = 0,
     Male = 1,
-    Other = 2
+    Other = 2,
 }
 
 export enum UserRole {
     Admin,
     Worker,
-    Client
+    Client,
 }
 
 export type UserInputData<T> = NewData<Omit<T, keyof UserBase>, Base>;
@@ -140,6 +141,19 @@ export abstract class UserBase extends Base {
     deletedBy?: User;
 }
 
+export abstract class VerificationBase extends UserBase {
+    @IsDateString()
+    @IsOptional()
+    @Column({ type: 'date', nullable: true })
+    verifiedAt?: string;
+
+    @Type(() => User)
+    @ValidateNested()
+    @IsOptional()
+    @ManyToOne(() => User)
+    verifiedBy?: User;
+}
+
 export class UserBaseFilter extends BaseFilter implements Partial<InputData<UserBase>> {
     @IsInt()
     @Min(1)
@@ -150,4 +164,13 @@ export class UserBaseFilter extends BaseFilter implements Partial<InputData<User
     @Min(1)
     @IsOptional()
     updatedBy?: number;
+}
+
+export class VerificationBaseFilter
+    extends UserBaseFilter
+    implements Partial<InputData<VerificationBase>>
+{
+    @IsBoolean()
+    @IsOptional()
+    verified?: boolean;
 }

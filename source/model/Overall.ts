@@ -19,7 +19,7 @@ export class Overall {
 
     @IsUrl()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     dailyPic?: string;
 
     @IsUrl({}, { each: true })
@@ -29,12 +29,12 @@ export class Overall {
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     summary?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     countRemark?: string;
 
     @IsInt()
@@ -122,52 +122,52 @@ export class Overall {
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'remark1', nullable: true })
+    @Column({ name: 'remark1', nullable: true })
     remark1?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'remark2', nullable: true })
+    @Column({ name: 'remark2', nullable: true })
     remark2?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'remark3', nullable: true })
+    @Column({ name: 'remark3', nullable: true })
     remark3?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'remark4', nullable: true })
+    @Column({ name: 'remark4', nullable: true })
     remark4?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'remark5', nullable: true })
+    @Column({ name: 'remark5', nullable: true })
     remark5?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'note1', nullable: true })
+    @Column({ name: 'note1', nullable: true })
     note1?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'note2', nullable: true })
+    @Column({ name: 'note2', nullable: true })
     note2?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { name: 'note3', nullable: true })
+    @Column({ name: 'note3', nullable: true })
     note3?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     generalRemark?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     abroadRemark?: string;
 
     @IsObject()
@@ -215,10 +215,10 @@ export class Overall {
     @Column('simple-json', { nullable: true })
     globalStatistics?: object;
 
-    @IsString()
+    @IsObject()
     @IsOptional()
-    @Column('text', { nullable: true })
-    globalOtherTrendChartData?: string;
+    @Column('simple-json', { nullable: true })
+    globalOtherTrendChartData?: object;
 
     @IsInt()
     @Min(0)
@@ -234,6 +234,6 @@ export class Overall {
 
     @IsDateString()
     @IsOptional()
-    @Column('timestamp without time zone', { nullable: true })
+    @Column('date', { nullable: true })
     updateTime?: string;
 }

@@ -115,7 +115,7 @@
         "migration:run": "npm run typeorm -- migration:run",
         "upgrade:dev": "npm run migration:generate -- migration/version  &&  npm run migration:run",
         "upgrade:pro": "cross-env NODE_ENV=production  npm run migration:generate -- .data/version  &&  npm run migration:run",
-        "pack-image": "docker build -t idea2app/rest-node-ts:latest .",
-        "container": "docker rm -f rest-node-ts  &&  docker run --name rest-node-ts -p 8080:8080 -d idea2app/rest-node-ts:latest"
+        "pack-image": "docker build -t wuhan2020/rest-api:latest .",
+        "container": "docker rm -f rest-api  &&  docker run --name rest-api -p 8080:8080 -d wuhan2020/rest-api:latest"
     }
 }

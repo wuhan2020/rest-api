@@ -62,5 +62,7 @@ typings/
 # next.js build output
 .next
 
-# Cloud services
-.leancloud/
+# Development environment
+.data/
+type/*.d.ts
+test/client.ts

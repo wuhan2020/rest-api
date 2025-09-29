@@ -1,37 +1,49 @@
 import { IsDateString, IsInt, IsOptional, IsString, IsUrl, Min } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity()
-export class News {
+export abstract class PostBase {
     @IsInt()
     @Min(1)
     @PrimaryGeneratedColumn()
     id: number;
 
-    @IsDateString()
-    @IsOptional()
-    @Column('timestamp without time zone', { nullable: true })
-    pubDate?: string;
-
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     title?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     summary?: string;
 
     @IsString()
     @IsOptional()
     @Column('text', { nullable: true })
-    infoSource?: string;
+    body?: string;
 
     @IsUrl()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     sourceUrl?: string;
+
+    @IsDateString()
+    @IsOptional()
+    @Column('date', { nullable: true })
+    crawlTime?: string;
+}
+
+@Entity()
+export class News extends PostBase {
+    @IsDateString()
+    @IsOptional()
+    @Column('date', { nullable: true })
+    pubDate?: string;
+
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
+    infoSource?: string;
 
     @IsInt()
     @Min(0)
@@ -47,27 +59,22 @@ export class News {
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     category?: string;
 
     @IsUrl()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     jumpUrl?: string;
-
-    @IsDateString()
-    @IsOptional()
-    @Column('timestamp without time zone', { nullable: true })
-    crawlTime?: string;
 
     @IsUrl()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     picUrl?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     tag?: string;
 
     @IsInt()
@@ -90,27 +97,27 @@ export class News {
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     dataInfoOperator?: string;
 
     @IsDateString()
     @IsOptional()
-    @Column('timestamp without time zone', { nullable: true })
+    @Column('date', { nullable: true })
     dataInfoTime?: string;
 
     @IsString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     provinceName?: string;
 
     @IsDateString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     createTime?: string;
 
     @IsDateString()
     @IsOptional()
-    @Column('text', { nullable: true })
+    @Column({ nullable: true })
     modifyTime?: string;
 
     @IsInt()
@@ -118,9 +125,4 @@ export class News {
     @IsOptional()
     @Column('smallint', { nullable: true })
     adoptType?: number;
-
-    @IsString()
-    @IsOptional()
-    @Column('text', { nullable: true })
-    body?: string;
 }
