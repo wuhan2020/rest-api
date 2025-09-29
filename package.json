@@ -80,8 +80,6 @@
     },
     "prettier": {
         "singleQuote": true,
-        "trailingComma": "none",
-        "arrowParens": "avoid",
         "tabWidth": 4,
         "printWidth": 100,
         "overrides": [

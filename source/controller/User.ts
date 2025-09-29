@@ -1,38 +1,35 @@
 import { createHash } from 'crypto';
 import { sign } from 'jsonwebtoken';
 import {
-    Authorized,
-    Body,
-    CurrentUser,
-    Delete,
-    ForbiddenError,
-    Get,
-    HttpCode,
     JsonController,
-    OnNull,
-    OnUndefined,
+    Get,
+    Authorized,
+    CurrentUser,
+    QueryParams,
+    ForbiddenError,
     Param,
     Post,
     Put,
-    QueryParams
+    Body,
+    HttpCode,
+    OnNull
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { 
-    dataSource, 
-    User, 
-    UserRole, 
-    UserFilter, 
-    UserListChunk 
+import { APP_SECRET, searchConditionOf } from '../utility';
+import {
+    dataSource,
+    User,
+    UserRole,
+    UserFilter,
+    UserListChunk,
+    EmailSignInData,
+    PhoneSignInData,
+    JWTAction
 } from '../model';
-import { APP_SECRET, AuthenticatedContext } from '../utility';
 import { ActivityLogController } from './ActivityLog';
 
-const store = dataSource.getRepository(User);
-
-export interface JWTAction {
-    context: AuthenticatedContext;
-}
+const userStore = dataSource.getRepository(User);
 
 @JsonController('/user')
 export class UserController {
@@ -46,23 +43,52 @@ export class UserController {
         token: sign({ ...user }, APP_SECRET)
     });
 
-    static getSession = ({ context }: JWTAction) => {
-        const ctx = context as AuthenticatedContext;
-        if (ctx.state.user) return ctx.state.user;
+    static async signUp(data: EmailSignInData | PhoneSignInData) {
+        const sum = await userStore.count();
 
-        if (ctx.state.jwtdata) {
-            // Return the user data from JWT for @CurrentUser to work
-            return ctx.state.jwtdata as User;
-        }
+        const { password: _, ...user } = await userStore.save({
+            name: 'email' in data ? data.email : data.mobilePhone,
+            ...data,
+            password: UserController.encrypt(data.password),
+            roles: [sum ? UserRole.Client : UserRole.Admin]
+        });
+        await ActivityLogController.logCreate(user, 'User', user.id);
 
-        return null;
-    };
+        return user;
+    }
+
+    static getSession = ({ context: { state } }: JWTAction) =>
+        'user' in state ? state.user : (console.error(state.jwtOriginalError), null);
+
+    @Post()
+    @HttpCode(201)
+    @ResponseSchema(User)
+    signUp(@Body() data: PhoneSignInData) {
+        return UserController.signUp(data);
+    }
+
+    @Get()
+    @Authorized(UserRole.Admin)
+    @ResponseSchema(UserListChunk)
+    async getList(@QueryParams() { gender, keywords, pageSize, pageIndex }: UserFilter) {
+        const where = searchConditionOf<User>(
+            ['email', 'mobilePhone', 'name'],
+            keywords,
+            gender && { gender }
+        );
+        const [list, count] = await userStore.findAndCount({
+            where,
+            skip: pageSize * (pageIndex - 1),
+            take: pageSize
+        });
+        return { list, count };
+    }
 
     @Get('/:id')
-    @OnNull(404)
     @ResponseSchema(User)
+    @OnNull(404)
     getOne(@Param('id') id: number) {
-        return store.findOne({ where: { id } });
+        return userStore.findOneBy({ id });
     }
 
     @Put('/:id')
@@ -71,43 +97,18 @@ export class UserController {
     async updateOne(
         @Param('id') id: number,
         @CurrentUser() updatedBy: User,
-        @Body() { ...data }: User
+        @Body() { password, ...data }: User
     ) {
-        if (
-            !updatedBy.roles.includes(UserRole.Admin) &&
-            id !== updatedBy.id
-        )
+        if (!updatedBy.roles.includes(UserRole.Admin) && id !== updatedBy.id)
             throw new ForbiddenError();
 
-        const saved = await store.save({
+        const saved = await userStore.save({
             ...data,
+            password: password && UserController.encrypt(password),
             id
         });
         await ActivityLogController.logUpdate(updatedBy, 'User', id);
 
-        return saved;
-    }
-
-    @Delete('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async deleteOne(@Param('id') id: number, @CurrentUser() deletedBy: User) {
-        if (deletedBy.roles.includes(UserRole.Admin) && id == deletedBy.id)
-            throw new ForbiddenError();
-
-        await store.softDelete(id);
-        await ActivityLogController.logDelete(deletedBy, 'User', id);
-    }
-
-    @Get()
-    @ResponseSchema(UserListChunk)
-    async getList(
-        @QueryParams() filter: UserFilter
-    ) {
-        const [list, count] = await store.findAndCount({
-            take: filter.pageSize || 10,
-            skip: ((filter.pageIndex || 1) - 1) * (filter.pageSize || 10)
-        });
-        return { list, count };
+        return UserController.sign(saved);
     }
 }

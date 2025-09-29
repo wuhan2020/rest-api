@@ -7,7 +7,7 @@
 
 ## 主要特性
 
-1. [JWT-based 用户认证登录](source/controller/Session.ts)
+1. [LeanCloud 手机短信验证码登录](source/controller/Session.ts)
 2. [角色管理](source/controller/Role.ts)
 3. [用户管理](source/controller/User.ts)
 4. [文件管理](source/controller/File.ts)

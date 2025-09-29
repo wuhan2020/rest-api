@@ -1,14 +1,15 @@
 import { Type } from 'class-transformer';
 import {
-    IsEmail,
-    IsEnum,
+    IsOptional,
     IsInt,
+    IsString,
+    IsDateString,
+    IsEnum,
     IsJWT,
     IsMobilePhone,
-    IsOptional,
-    IsString,
-    IsStrongPassword,
+    IsEmail,
     IsUrl,
+    IsStrongPassword,
     Min,
     ValidateNested
 } from 'class-validator';
@@ -25,9 +26,9 @@ export enum Gender {
     Other = 2
 }
 
-export enum Role {
-    Administrator,
-    Manager,
+export enum UserRole {
+    Admin,
+    Worker,
     Client
 }
 
@@ -61,26 +62,16 @@ export class UserListChunk implements ListChunk<User> {
     list: User[];
 }
 
-export class SignInData implements Required<Pick<User, 'mobilePhone' | 'password'>> {
-    @IsMobilePhone()
-    mobilePhone: string;
+export class EmailSignInData implements Required<Pick<User, 'email' | 'password'>> {
+    @IsEmail()
+    email: string;
 
     @IsString()
     password: string;
 }
 
-export class SignUpData
-    extends SignInData
-    implements Required<Pick<User, 'name' | 'mobilePhone' | 'password'>>
-{
-    @IsString()
-    name: string;
-}
-
 export interface JWTAction {
-    context?: ParameterizedContext<
-        { jwtOriginalError: JsonWebTokenError } | { user: User }
-    >;
+    context?: ParameterizedContext<{ jwtOriginalError: JsonWebTokenError } | { user: User }>;
 }
 
 @Entity()
@@ -93,6 +84,11 @@ export class User extends Base {
     @IsOptional()
     @Column({ type: 'simple-enum', enum: Gender, nullable: true })
     gender?: Gender;
+
+    @IsDateString()
+    @IsOptional()
+    @Column({ type: 'date', nullable: true })
+    birthday?: string;
 
     @IsUrl()
     @IsOptional()
@@ -114,10 +110,10 @@ export class User extends Base {
     @Column({ nullable: true, select: false })
     password?: string;
 
-    @IsEnum(Role, { each: true })
+    @IsEnum(UserRole, { each: true })
     @IsOptional()
     @Column('simple-json')
-    roles: Role[];
+    roles: UserRole[];
 
     @IsJWT()
     @IsOptional()
@@ -144,10 +140,7 @@ export abstract class UserBase extends Base {
     deletedBy?: User;
 }
 
-export class UserBaseFilter
-    extends BaseFilter
-    implements Partial<InputData<UserBase>>
-{
+export class UserBaseFilter extends BaseFilter implements Partial<InputData<UserBase>> {
     @IsInt()
     @Min(1)
     @IsOptional()
