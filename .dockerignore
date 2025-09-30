@@ -1,0 +1,9 @@
+ReadMe.md
+node_modules/
+dist/
+.*
+!.npmrc
+!.env*
+start.sh
+eslint.config.*
+*.pem

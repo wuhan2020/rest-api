@@ -2,8 +2,8 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
-import { ListChunk } from './Base';
-import { PostBase } from './Epidemic/News';
+import { ListChunk } from '../Base';
+import { PostBase } from './News';
 
 @Entity()
 export class EpidemicRumor extends PostBase {
