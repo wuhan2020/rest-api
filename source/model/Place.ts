@@ -8,12 +8,10 @@ import {
     IsLongitude,
     IsString,
     ValidateNested,
-    IsBoolean,
 } from 'class-validator';
 import { Column } from 'typeorm';
 
-import { InputData } from './Base';
-import { UserBaseFilter, VerificationBase } from './User';
+import { VerificationBase } from './User';
 
 export class GeoCoord {
     @IsLatitude()
@@ -53,7 +51,6 @@ export abstract class OrganizationBase extends VerificationBase {
     @Column({ nullable: true })
     remark?: string;
 }
-
 
 export abstract class PlaceBase extends OrganizationBase {
     @Length(3)

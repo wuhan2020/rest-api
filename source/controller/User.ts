@@ -68,7 +68,7 @@ export class UserController {
     }
 
     @Get()
-    @Authorized(UserRole.Admin)
+    // @Authorized(UserRole.Admin)
     @ResponseSchema(UserListChunk)
     async getList(@QueryParams() { gender, keywords, pageSize, pageIndex }: UserFilter) {
         const where = searchConditionOf<User>(

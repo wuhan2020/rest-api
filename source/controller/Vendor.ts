@@ -2,6 +2,7 @@ import {
     JsonController,
     Post,
     Authorized,
+    CurrentUser,
     Body,
     Get,
     QueryParams,
@@ -10,7 +11,6 @@ import {
     Patch,
     OnUndefined,
     Delete,
-    CurrentUser,
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { OnNull } from 'routing-controllers';

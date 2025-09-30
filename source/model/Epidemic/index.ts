@@ -1,4 +1,4 @@
 export * from '../Rumor';
 export * from '../News';
-export * from '../Statistic';
+export * from '../Area';
 export * from '../Overall';
