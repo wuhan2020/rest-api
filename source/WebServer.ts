@@ -6,14 +6,9 @@ import KoaLogger from 'koa-logger';
 import { useKoaServer } from 'routing-controllers';
 import { ProxyAgent, setGlobalDispatcher } from 'undici';
 
-import {
-    BaseController,
-    controllers,
-    mocker,
-    swagger,
-    UserController
-} from './controller';
+import { BaseController, controllers, mocker, swagger } from './controller';
 import { dataSource } from './model';
+import { sessionService } from './service';
 import { APP_SECRET, HTTP_PROXY, isProduct, PORT } from './utility';
 
 if (HTTP_PROXY) setGlobalDispatcher(new ProxyAgent(HTTP_PROXY));
@@ -29,8 +24,8 @@ if (!isProduct) app.use(mocker());
 useKoaServer(app, {
     controllers,
     cors: true,
-    authorizationChecker: action => !!UserController.getSession(action),
-    currentUserChecker: UserController.getSession
+    authorizationChecker: (action) => !!sessionService.checkJWT(action),
+    currentUserChecker: sessionService.checkJWT,
 });
 
 console.time('Server boot');
@@ -40,5 +35,5 @@ dataSource.initialize().then(() =>
         console.log(BaseController.entryOf(HOST));
 
         console.timeEnd('Server boot');
-    })
+    }),
 );

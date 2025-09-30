@@ -22,7 +22,7 @@ import {
     SuppliesRequirement,
     SuppliesRequirementListChunk,
 } from '../model';
-import { VerificationService } from '../service/User';
+import { VerificationService } from '../service';
 
 @JsonController('/supplies/requirement')
 export class RequirementController {

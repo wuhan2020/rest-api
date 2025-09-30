@@ -22,7 +22,7 @@ import {
     DonationRecipient,
     DonationRecipientListChunk,
 } from '../model';
-import { VerificationService } from '../service/User';
+import { VerificationService } from '../service';
 
 @JsonController('/donation/recipient')
 export class DonationRecipientController {

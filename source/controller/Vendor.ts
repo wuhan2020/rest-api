@@ -16,7 +16,7 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 import { OnNull } from 'routing-controllers';
 
 import { User, UserRole, VerificationBaseFilter, Vendor, VendorListChunk } from '../model';
-import { VerificationService } from '../service/User';
+import { VerificationService } from '../service';
 
 @JsonController('/vendor')
 export class VendorController {

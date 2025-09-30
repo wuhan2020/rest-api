@@ -6,19 +6,19 @@ import {
     Body,
     CurrentUser,
     HttpCode,
-    OnUndefined
+    OnUndefined,
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 import { uniqueID } from 'web-utility';
 
-import { dataSource, Captcha, SMSCodeInput, PhoneSignInData, User } from '../model';
+import { Captcha, SMSCodeInput, PhoneSignInData, User } from '../model';
 import { leanClient } from '../utility';
-import { UserController } from './User';
-
-const userStore = dataSource.getRepository(User);
+import { sessionService } from '../service';
 
 @JsonController('/session')
 export class SessionController {
+    userStore = sessionService.userStore;
+
     @Post('/captcha')
     @ResponseSchema(Captcha)
     async createCaptcha() {
@@ -31,7 +31,7 @@ export class SessionController {
     static async verifyCaptcha(captcha_token: string, captcha_code: string) {
         const { body } = await leanClient.post<{ validate_token: string }>('verifyCaptcha', {
             captcha_code,
-            captcha_token
+            captcha_token,
         });
         return { token: body.validate_token };
     }
@@ -44,7 +44,7 @@ export class SessionController {
 
         await leanClient.post<{}>('requestSmsCode', {
             mobilePhoneNumber: mobilePhone,
-            validate_token: token
+            validate_token: token,
         });
     }
 
@@ -55,9 +55,11 @@ export class SessionController {
     @HttpCode(201)
     @ResponseSchema(User)
     async signIn(@Body() { mobilePhone, password }: PhoneSignInData): Promise<User> {
+        const { userStore } = this;
+
         let user = await userStore.findOneBy({
             mobilePhone,
-            password: UserController.encrypt(password)
+            password: sessionService.encrypt(password),
         });
 
         if (!user) {
@@ -65,9 +67,9 @@ export class SessionController {
 
             user =
                 (await userStore.findOneBy({ mobilePhone })) ||
-                (await UserController.signUp({ mobilePhone, password: uniqueID() }));
+                (await sessionService.signUp({ mobilePhone, password: uniqueID() }));
         }
-        return UserController.sign(user);
+        return sessionService.sign(user);
     }
 
     @Get('/')
