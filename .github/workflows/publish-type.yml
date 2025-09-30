@@ -27,7 +27,7 @@ jobs:
                   EOF
             - name: Install, Build & Publish
               run: |
-                  pnpm e i  &&  npm test
+                  pnpm i  &&  npm test
                   cd type/
                   npm publish
               env:

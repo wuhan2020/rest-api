@@ -45,7 +45,7 @@
 
 ```shell
 npm i pnpm -g
-pnpm e i
+pnpm i
 pnpm dev
 ```
 
