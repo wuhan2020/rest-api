@@ -1,120 +1,138 @@
 import { ForbiddenError, NotFoundError } from 'routing-controllers';
-import { DeepPartial, FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
-import { Constructor } from 'web-utility';
+import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull, Not } from 'typeorm';
 
 import { searchConditionOf } from '../utility';
 import {
-    dataSource,
     User,
     UserRole,
+    UserBase,
+    UserBaseFilter,
     ActivityLog,
     VerificationBase,
     VerificationBaseFilter,
-    ListChunk,
 } from '../model';
+import { BaseService } from './Base';
 import { activityLogService } from './ActivityLog';
 
-export class VerificationService<T extends VerificationBase> {
-    store: Repository<T>;
-    logName: ActivityLog['tableName'];
-
-    constructor(
-        public entityClass: Constructor<T>,
-        public searchKeys: (keyof T)[],
-    ) {
-        this.store = dataSource.getRepository(entityClass);
-        this.logName = entityClass.name as ActivityLog['tableName'];
+export class UserService<T extends UserBase> extends BaseService<T> {
+    createOne(data: Partial<T>, createdBy: User) {
+        return super.createOne({ ...data, createdBy });
     }
 
-    async createOne(data: T, createdBy: User) {
-        const createdOne = await this.store.save({ ...data, createdBy, verified: false });
-
-        await activityLogService.logCreate(createdBy, this.logName, createdOne.id);
-
-        return createdOne;
+    getOne(id: number, relations: string[] = ['createdBy', 'updatedBy']) {
+        return super.getOne(id, relations);
     }
 
-    getOne(id: number) {
-        return this.store.findOne({
-            where: { id } as FindOptionsWhere<T>,
-            relations: ['createdBy', 'verifiedBy'],
-        });
-    }
-
-    async editOne(id: number, { verifiedAt, verifiedBy, ...data }: Partial<T>, updatedBy: User) {
-        const { store, logName } = this;
+    async editOne(id: number, data: Partial<T>, updatedBy: User) {
+        const { tableName } = this;
 
         const oldOne = await this.getOne(id);
 
-        if (!oldOne) throw new NotFoundError(`${logName} ${id} is not found`);
-
-        const isCreator = oldOne.createdBy?.id === updatedBy.id;
+        if (!oldOne) throw new NotFoundError(`${tableName} ${id} is not found`);
 
         if (
-            !isCreator &&
+            oldOne.createdBy?.id !== updatedBy.id &&
             !updatedBy.roles.includes(UserRole.Admin) &&
             !updatedBy.roles.includes(UserRole.Worker)
         )
-            throw new ForbiddenError(`Only creator or staff can edit ${logName} ${id}`);
+            throw new ForbiddenError(`Only creator or staff can edit ${tableName} ${id}`);
 
-        const updatedOne = await store.save({
-            ...data,
-            id,
-            verifiedAt: isCreator ? null : new Date() + '',
-            verifiedBy: isCreator ? null : verifiedBy,
-        } as T);
-
-        await activityLogService.logUpdate(updatedBy, logName, id);
-
-        return updatedOne;
-    }
-
-    async verifyOne(id: number, verifiedBy: User) {
-        const { store, logName } = this;
-
-        const existed = await store.existsBy({ id } as FindOptionsWhere<T>);
-
-        if (!existed) throw new NotFoundError(`${logName} ${id} is not found`);
-
-        const updatedOne = await store.save({
-            id,
-            verifiedAt: new Date() + '',
-            verifiedBy,
-        } as DeepPartial<T>);
-
-        await activityLogService.logUpdate(verifiedBy, logName, id);
-
-        return updatedOne;
+        return super.editOne(id, { ...data, updatedBy });
     }
 
     async deleteOne(id: number, deletedBy: User) {
-        const { store, logName } = this;
+        const { store, tableName } = this;
 
         const oldOne = await store.findOne({
             where: { id } as FindOptionsWhere<T>,
             relations: ['createdBy'],
         });
 
-        if (!oldOne) throw new NotFoundError(`${logName} ${id} is not found`);
+        if (!oldOne) throw new NotFoundError(`${tableName} ${id} is not found`);
 
         if (oldOne.createdBy?.id !== deletedBy.id && !deletedBy.roles.includes(UserRole.Admin))
-            throw new ForbiddenError(`Only creator or admin can delete ${logName} ${id}`);
+            throw new ForbiddenError(`Only creator or admin can delete ${tableName} ${id}`);
 
-        await store.softDelete(id);
-        await activityLogService.logDelete(deletedBy, logName, id);
+        await store.save({ id, deletedBy } as T);
+        return store.softDelete(id);
     }
 
-    async getList({ verified, keywords, pageSize, pageIndex }: VerificationBaseFilter) {
-        const where = searchConditionOf<T>(this.searchKeys, keywords, {
+    getList(
+        { createdBy, updatedBy, keywords, ...filter }: UserBaseFilter,
+        where?: FindOneOptions<T>['where'],
+        options: FindManyOptions<T> = { relations: ['createdBy'] },
+    ) {
+        where ??= searchConditionOf<T>(this.searchKeys, keywords, {
+            ...(createdBy ? { createdBy: { id: createdBy } } : {}),
+            ...(updatedBy ? { updatedBy: { id: updatedBy } } : {}),
+        } as FindOptionsWhere<T>);
+
+        return super.getList({ keywords, ...filter }, where, options);
+    }
+}
+
+export class CRUDServiceWithLog<T extends UserBase> extends UserService<T> {
+    declare tableName: ActivityLog['tableName'];
+
+    async createOne(data: Partial<T>, createdBy: User) {
+        const createdOne = await super.createOne(data, createdBy);
+
+        await activityLogService.logCreate(createdBy, this.tableName, createdOne.id);
+
+        return createdOne;
+    }
+
+    async editOne(id: number, data: Partial<T>, updatedBy: User) {
+        const updatedOne = await super.editOne(id, data, updatedBy);
+
+        await activityLogService.logUpdate(updatedBy, this.tableName, id);
+
+        return updatedOne;
+    }
+
+    async deleteOne(id: number, deletedBy: User) {
+        const result = await super.deleteOne(id, deletedBy);
+
+        await activityLogService.logDelete(deletedBy, this.tableName, id);
+
+        return result;
+    }
+}
+
+export class VerificationService<T extends VerificationBase> extends CRUDServiceWithLog<T> {
+    createOne({ verifiedAt, verifiedBy, ...data }: Partial<T>, createdBy: User) {
+        return super.createOne(data as Partial<T>, createdBy);
+    }
+
+    getOne(id: number, relations: string[] = ['createdBy', 'updatedBy', 'verifiedBy']) {
+        return super.getOne(id, relations);
+    }
+
+    editOne(id: number, { verifiedAt, verifiedBy, ...data }: Partial<T>, updatedBy: User) {
+        return super.editOne(
+            id,
+            { ...data, verifiedAt: null, verifiedBy: null } as Partial<T>,
+            updatedBy,
+        );
+    }
+
+    verifyOne(id: number, verifiedBy: User) {
+        return super.editOne(
+            id,
+            { verifiedAt: new Date() + '', verifiedBy } as Partial<T>,
+            verifiedBy,
+        );
+    }
+
+    getList(
+        { verified, keywords, ...filter }: VerificationBaseFilter,
+        where?: FindOneOptions<T>['where'],
+        options: FindManyOptions<T> = { relations: ['createdBy', 'verifiedBy'] },
+    ) {
+        where ??= searchConditionOf<T>(this.searchKeys, keywords, {
             verifiedAt: verified ? Not(IsNull()) : verified === false ? IsNull() : undefined,
         } as FindOptionsWhere<T>);
 
-        const [list, count] = await this.store.findAndCount({
-            relations: ['createdBy', 'verifiedBy'],
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
-        });
-        return { list, count } as ListChunk<T>;
+        return super.getList({ keywords, ...filter }, where, options);
     }
 }

@@ -16,7 +16,7 @@ import {
 import { ResponseSchema } from 'routing-controllers-openapi';
 
 import { User, UserRole, VerificationBaseFilter, Clinic, ClinicListChunk } from '../model';
-import { VerificationService } from '../service/User';
+import { VerificationService } from '../service';
 
 @JsonController('/clinic')
 export class ClinicController {
