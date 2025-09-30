@@ -13,6 +13,7 @@ import { HotelController } from './Hotel';
 import { VendorController } from './Vendor';
 import { ClinicController } from './Clinic';
 import { DonationRecipientController } from './DonationRecipient';
+import { epidemicControllers } from './Epidemic';
 
 export * from './ActivityLog';
 export * from './Main';
@@ -25,8 +26,10 @@ export * from './Hotel';
 export * from './Vendor';
 export * from './Clinic';
 export * from './DonationRecipient';
+export * from './Epidemic';
 
 export const controllers = [
+    ...epidemicControllers,
     DonationRecipientController,
     ClinicController,
     VendorController,

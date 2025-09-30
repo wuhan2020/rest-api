@@ -11,7 +11,7 @@ import { Clinic } from './Clinic';
 import { Hotel } from './Hotel';
 import { SuppliesRequirement } from './Supplies';
 import { DonationRecipient } from './Donation';
-import { EpidemicStatistic, News, Overall, Rumor } from './Epidemic';
+import { EpidemicAreaDaily, EpidemicNews, EpidemicOverall, EpidemicRumor } from './Epidemic';
 
 const { ssl, host, port, user, password, database } = isProduct
     ? parse(DATABASE_URL)
@@ -26,10 +26,10 @@ const entities = [
     Hotel,
     SuppliesRequirement,
     DonationRecipient,
-    Rumor,
-    News,
-    EpidemicStatistic,
-    Overall,
+    EpidemicRumor,
+    EpidemicNews,
+    EpidemicAreaDaily,
+    EpidemicOverall,
 ];
 
 const commonOptions: Pick<

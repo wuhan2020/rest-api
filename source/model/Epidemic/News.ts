@@ -1,12 +1,18 @@
-import { IsDateString, IsInt, IsOptional, IsString, IsUrl, Min } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Type } from 'class-transformer';
+import {
+    IsDateString,
+    IsInt,
+    IsOptional,
+    IsString,
+    IsUrl,
+    Min,
+    ValidateNested
+} from 'class-validator';
+import { Column, Entity } from 'typeorm';
 
-export abstract class PostBase {
-    @IsInt()
-    @Min(1)
-    @PrimaryGeneratedColumn()
-    id: number;
+import { Base, ListChunk } from '../Base';
 
+export abstract class PostBase extends Base {
     @IsString()
     @IsOptional()
     @Column({ nullable: true })
@@ -34,7 +40,7 @@ export abstract class PostBase {
 }
 
 @Entity()
-export class News extends PostBase {
+export class EpidemicNews extends PostBase {
     @IsDateString()
     @IsOptional()
     @Column('date', { nullable: true })
@@ -125,4 +131,14 @@ export class News extends PostBase {
     @IsOptional()
     @Column('smallint', { nullable: true })
     adoptType?: number;
+}
+
+export class NewsListChunk implements ListChunk<EpidemicNews> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => EpidemicNews)
+    @ValidateNested({ each: true })
+    list: EpidemicNews[];
 }

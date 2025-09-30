@@ -1,13 +1,19 @@
-import { IsDateString, IsInt, IsOptional, IsPostalCode, IsString, Min } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Type } from 'class-transformer';
+import {
+    IsDateString,
+    IsInt,
+    IsOptional,
+    IsPostalCode,
+    IsString,
+    Min,
+    ValidateNested
+} from 'class-validator';
+import { Column, Entity } from 'typeorm';
+
+import { Base, ListChunk } from '../Base';
 
 @Entity()
-export class EpidemicStatistic {
-    @IsInt()
-    @Min(1)
-    @PrimaryGeneratedColumn()
-    id: number;
-
+export class EpidemicAreaDaily extends Base {
     @IsString()
     @IsOptional()
     @Column({ nullable: true })
@@ -110,4 +116,14 @@ export class EpidemicStatistic {
     @IsOptional()
     @Column('integer', { name: 'city_deadCount', nullable: true })
     cityDeadCount?: number;
+}
+
+export class AreaDailyListChunk implements ListChunk<EpidemicAreaDaily> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => EpidemicAreaDaily)
+    @ValidateNested({ each: true })
+    list: EpidemicAreaDaily[];
 }

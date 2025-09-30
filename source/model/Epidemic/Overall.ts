@@ -1,3 +1,4 @@
+import { Type } from 'class-transformer';
 import {
     IsDateString,
     IsInt,
@@ -7,16 +8,14 @@ import {
     IsString,
     IsUrl,
     Min,
+    ValidateNested
 } from 'class-validator';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity } from 'typeorm';
+
+import { Base, ListChunk } from '../Base';
 
 @Entity()
-export class Overall {
-    @IsInt()
-    @Min(1)
-    @PrimaryGeneratedColumn()
-    id: number;
-
+export class EpidemicOverall extends Base {
     @IsUrl()
     @IsOptional()
     @Column({ nullable: true })
@@ -236,4 +235,14 @@ export class Overall {
     @IsOptional()
     @Column('date', { nullable: true })
     updateTime?: string;
+}
+
+export class OverallListChunk implements ListChunk<EpidemicOverall> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => EpidemicOverall)
+    @ValidateNested({ each: true })
+    list: EpidemicOverall[];
 }

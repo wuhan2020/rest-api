@@ -1,10 +1,8 @@
 import { ForbiddenError, NotFoundError } from 'routing-controllers';
-import { FindOptionsWhere, IsNull, Not, Repository } from 'typeorm';
-import { Constructor } from 'web-utility';
+import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull, Not } from 'typeorm';
 
 import { searchConditionOf } from '../utility';
 import {
-    dataSource,
     User,
     UserRole,
     UserBase,
@@ -12,32 +10,21 @@ import {
     ActivityLog,
     VerificationBase,
     VerificationBaseFilter,
-    ListChunk,
 } from '../model';
+import { BaseService } from './Base';
 import { activityLogService } from './ActivityLog';
 
-export class CRUDService<T extends UserBase> {
-    store: Repository<T>;
-    tableName: string;
-
-    constructor(
-        public entityClass: Constructor<T>,
-        public searchKeys: (keyof T)[],
-    ) {
-        this.store = dataSource.getRepository(entityClass);
-        this.tableName = entityClass.name;
-    }
-
+export class UserService<T extends UserBase> extends BaseService<T> {
     createOne(data: Partial<T>, createdBy: User) {
-        return this.store.save({ ...data, createdBy } as T);
+        return super.createOne({ ...data, createdBy });
     }
 
     getOne(id: number, relations: string[] = ['createdBy', 'updatedBy']) {
-        return this.store.findOne({ where: { id } as FindOptionsWhere<T>, relations });
+        return super.getOne(id, relations);
     }
 
     async editOne(id: number, data: Partial<T>, updatedBy: User) {
-        const { store, tableName } = this;
+        const { tableName } = this;
 
         const oldOne = await this.getOne(id);
 
@@ -50,7 +37,7 @@ export class CRUDService<T extends UserBase> {
         )
             throw new ForbiddenError(`Only creator or staff can edit ${tableName} ${id}`);
 
-        return store.save({ ...data, id, updatedBy } as T);
+        return super.editOne(id, { ...data, updatedBy });
     }
 
     async deleteOne(id: number, deletedBy: User) {
@@ -67,23 +54,24 @@ export class CRUDService<T extends UserBase> {
             throw new ForbiddenError(`Only creator or admin can delete ${tableName} ${id}`);
 
         await store.save({ id, deletedBy } as T);
-        await store.softDelete(id);
+        return store.softDelete(id);
     }
 
-    async getList({ keywords, pageSize, pageIndex }: UserBaseFilter) {
-        const where = searchConditionOf<T>(this.searchKeys, keywords);
+    getList(
+        { createdBy, updatedBy, keywords, ...filter }: UserBaseFilter,
+        where?: FindOneOptions<T>['where'],
+        options: FindManyOptions<T> = { relations: ['createdBy'] },
+    ) {
+        where ??= searchConditionOf<T>(this.searchKeys, keywords, {
+            ...(createdBy ? { createdBy: { id: createdBy } } : {}),
+            ...(updatedBy ? { updatedBy: { id: updatedBy } } : {}),
+        } as FindOptionsWhere<T>);
 
-        const [list, count] = await this.store.findAndCount({
-            relations: ['createdBy'],
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
-        });
-        return { list, count } as ListChunk<T>;
+        return super.getList({ keywords, ...filter }, where, options);
     }
 }
 
-export class CRUDServiceWithLog<T extends UserBase> extends CRUDService<T> {
+export class CRUDServiceWithLog<T extends UserBase> extends UserService<T> {
     declare tableName: ActivityLog['tableName'];
 
     async createOne(data: Partial<T>, createdBy: User) {
@@ -103,9 +91,11 @@ export class CRUDServiceWithLog<T extends UserBase> extends CRUDService<T> {
     }
 
     async deleteOne(id: number, deletedBy: User) {
-        await super.deleteOne(id, deletedBy);
+        const result = await super.deleteOne(id, deletedBy);
 
         await activityLogService.logDelete(deletedBy, this.tableName, id);
+
+        return result;
     }
 }
 
@@ -134,17 +124,15 @@ export class VerificationService<T extends VerificationBase> extends CRUDService
         );
     }
 
-    async getList({ verified, keywords, pageSize, pageIndex }: VerificationBaseFilter) {
-        const where = searchConditionOf<T>(this.searchKeys, keywords, {
+    getList(
+        { verified, keywords, ...filter }: VerificationBaseFilter,
+        where?: FindOneOptions<T>['where'],
+        options: FindManyOptions<T> = { relations: ['createdBy', 'verifiedBy'] },
+    ) {
+        where ??= searchConditionOf<T>(this.searchKeys, keywords, {
             verifiedAt: verified ? Not(IsNull()) : verified === false ? IsNull() : undefined,
         } as FindOptionsWhere<T>);
 
-        const [list, count] = await this.store.findAndCount({
-            relations: ['createdBy', 'verifiedBy'],
-            where,
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize,
-        });
-        return { list, count } as ListChunk<T>;
+        return super.getList({ keywords, ...filter }, where, options);
     }
 }
