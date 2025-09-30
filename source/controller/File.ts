@@ -1,60 +1,44 @@
+import { DeleteObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import {
-    JsonController,
-    Post,
     Authorized,
-    Ctx,
-    UploadedFile,
-    Get,
-    QueryParam,
+    Controller,
+    CurrentUser,
     Delete,
-    Param,
+    HttpCode,
     OnUndefined,
+    Param,
+    Post
 } from 'routing-controllers';
-import { File } from '@koa/multer';
-import { File as LCFile, ACL, Object as LCObject } from 'leanengine';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext, queryPage } from '../utility';
-import { RoleController } from './Role';
+import { SignedLink, User } from '../model';
+import { AWS_S3_BUCKET, AWS_S3_PUBLIC_HOST, s3Client } from '../utility';
 
-@JsonController('/file')
+@Controller('/file')
 export class FileController {
-    @Post()
+    @Post('/signed-link/:path(.+)')
     @Authorized()
-    async create(
-        @Ctx() { currentUser }: LCContext,
-        @UploadedFile('file') { buffer, originalname }: File,
-    ) {
-        const acl = new ACL();
+    @HttpCode(201)
+    @ResponseSchema(SignedLink)
+    async createSignedLink(@CurrentUser() { id }: User, @Param('path') path: string) {
+        const Key = `user/${id}/${path}`;
 
-        acl.setPublicReadAccess(true);
-        acl.setPublicWriteAccess(false);
-        acl.setWriteAccess(currentUser, true);
+        const command = new PutObjectCommand({ Bucket: AWS_S3_BUCKET, Key });
 
-        const admin = await RoleController.getAdmin();
+        const putLink = await getSignedUrl(s3Client, command);
 
-        if (admin) acl.setRoleWriteAccess(admin, true);
-
-        const file = await new LCFile(originalname, buffer).setACL(acl).save();
-
-        return file.toJSON() as LCFile;
+        return { putLink, getLink: `${AWS_S3_PUBLIC_HOST}/${Key}` };
     }
 
-    @Get()
-    @Authorized()
-    getList(
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number,
-    ) {
-        return queryPage(LCFile, { size, index });
-    }
-
-    @Delete('/:id')
+    @Delete('/:path(.+)')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-    ) {
-        await LCObject.createWithoutData('_File', id).destroy({ user });
+    async deleteFile(@CurrentUser() { id }: User, @Param('path') path: string) {
+        const Key = `user/${id}/${path}`;
+
+        const command = new DeleteObjectCommand({ Bucket: AWS_S3_BUCKET, Key });
+
+        await s3Client.send(command);
     }
 }

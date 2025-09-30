@@ -1,14 +1,27 @@
-import { Length, IsMilitaryTime } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, Min, IsString, ValidateNested } from 'class-validator';
+import { Column, Entity } from 'typeorm';
 
-import { OrganizationModel } from './Place';
+import { ListChunk } from './Base';
+import { OrganizationBase } from './Place';
 
-export class ClinicModel extends OrganizationModel {
-    @Length(2)
-    name: string;
-
-    @IsMilitaryTime()
+@Entity()
+export class Clinic extends OrganizationBase {
+    @IsString()
+    @Column()
     startTime: string;
 
-    @IsMilitaryTime()
+    @IsString()
+    @Column()
     endTime: string;
+}
+
+export class ClinicListChunk implements ListChunk<Clinic> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => Clinic)
+    @ValidateNested({ each: true })
+    list: Clinic[];
 }

@@ -1,122 +1,64 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
 import {
     JsonController,
     Post,
     Authorized,
-    Ctx,
+    CurrentUser,
     Body,
-    ForbiddenError,
     Get,
-    QueryParam,
+    QueryParams,
     Param,
     Put,
     Patch,
+    Delete,
     OnUndefined,
-    Delete
+    OnNull,
 } from 'routing-controllers';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext, queryPage } from '../utility';
-import { LogisticsModel } from '../model';
-import { RoleController } from './Role';
-
-export class Logistics extends LCObject {}
+import { User, UserRole, VerificationBaseFilter, Logistics, LogisticsListChunk } from '../model';
+import { VerificationService } from '../service/User';
 
 @JsonController('/logistics')
 export class LogisticsController {
+    service = new VerificationService(Logistics, ['name', 'remark']);
+
     @Post()
     @Authorized()
-    async create(
-        @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: LogisticsModel
-    ) {
-        let logistics = await new Query(Logistics)
-            .equalTo('name', name)
-            .first();
-
-        if (logistics)
-            throw new ForbiddenError(
-                '同一物流公司不能重复发布，请联系原发布者修改'
-            );
-
-        const acl = new ACL();
-
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(user, true),
-            acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
-
-        logistics = await new Logistics()
-            .setACL(acl)
-            .save({ ...rest, name, creator: user, verified: false }, { user });
-
-        return logistics.toJSON();
+    create(@CurrentUser() createdBy: User, @Body() data: Logistics) {
+        return this.service.createOne(data, createdBy);
     }
 
     @Get()
-    getList(
-        @QueryParam('verified') verified: boolean,
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
-    ) {
-        return queryPage(Logistics, {
-            include: ['creator', 'verifier'],
-            equal: { verified },
-            size,
-            index
-        });
+    @ResponseSchema(LogisticsListChunk)
+    getList(@QueryParams() filter: VerificationBaseFilter) {
+        return this.service.getList(filter);
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: string) {
-        const logistics = await new Query(Logistics).get(id);
-
-        return logistics.toJSON();
+    @ResponseSchema(Logistics)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return this.service.getOne(id);
     }
 
     @Put('/:id')
     @Authorized()
-    async edit(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { name, ...rest }: LogisticsModel
-    ) {
-        let logistics = LCObject.createWithoutData('Logistics', id);
-
-        await logistics.save(
-            { ...rest, verified: false, verifier: null },
-            { user }
-        );
-
-        logistics = await new Query(Logistics).include('creator').get(id);
-
-        return logistics.toJSON();
+    @ResponseSchema(Logistics)
+    edit(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() logistics: Logistics) {
+        return this.service.editOne(id, logistics, updatedBy);
     }
 
-    @Patch('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async verify(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { verified }: { verified: boolean }
-    ) {
-        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
-
-        await LCObject.createWithoutData('Logistics', id).save(
-            { verified, verifier: user },
-            { user }
-        );
+    @Patch('/:id/verification')
+    @Authorized([UserRole.Admin, UserRole.Worker])
+    @ResponseSchema(Logistics)
+    verify(@CurrentUser() verifiedBy: User, @Param('id') id: number) {
+        return this.service.verifyOne(id, verifiedBy);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
-    ) {
-        await LCObject.createWithoutData('Logistics', id).destroy({
-            user
-        });
+    deleteOne(@Param('id') id: number, @CurrentUser() deletedBy: User) {
+        return this.service.deleteOne(id, deletedBy);
     }
 }

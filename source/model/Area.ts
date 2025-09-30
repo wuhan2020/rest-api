@@ -1,64 +1,113 @@
+import { IsDateString, IsInt, IsOptional, IsPostalCode, IsString, Min } from 'class-validator';
 import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity()
-export class Area {
+export class EpidemicStatistic {
+    @IsInt()
+    @Min(1)
     @PrimaryGeneratedColumn()
     id: number;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     continentName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     continentEnglishName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     countryName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     countryEnglishName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     provinceName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     provinceEnglishName?: string;
 
-    @Column('text', { name: 'province_zipCode', nullable: true })
+    @IsPostalCode()
+    @IsOptional()
+    @Column({ name: 'province_zipCode', nullable: true })
     provinceZipCode?: string;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'province_confirmedCount', nullable: true })
     provinceConfirmedCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'province_suspectedCount', nullable: true })
     provinceSuspectedCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'province_curedCount', nullable: true })
     provinceCuredCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'province_deadCount', nullable: true })
     provinceDeadCount?: number;
 
-    @Column('timestamp without time zone', { nullable: true })
-    updateTime?: Date;
+    @IsDateString()
+    @IsOptional()
+    @Column('date', { nullable: true })
+    updateTime?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     cityName?: string;
 
-    @Column('text', { nullable: true })
+    @IsString()
+    @IsOptional()
+    @Column({ nullable: true })
     cityEnglishName?: string;
 
-    @Column('text', { name: 'city_zipCode', nullable: true })
+    @IsPostalCode()
+    @IsOptional()
+    @Column({ name: 'city_zipCode', nullable: true })
     cityZipCode?: string;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'city_confirmedCount', nullable: true })
     cityConfirmedCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'city_suspectedCount', nullable: true })
     citySuspectedCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'city_curedCount', nullable: true })
     cityCuredCount?: number;
 
+    @IsInt()
+    @Min(0)
+    @IsOptional()
     @Column('integer', { name: 'city_deadCount', nullable: true })
     cityDeadCount?: number;
 }

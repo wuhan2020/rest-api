@@ -1,118 +1,64 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
 import {
     JsonController,
     Post,
     Authorized,
-    Ctx,
+    CurrentUser,
     Body,
-    ForbiddenError,
     Get,
-    QueryParam,
+    QueryParams,
     Param,
     Put,
     Patch,
+    Delete,
     OnUndefined,
-    Delete
+    OnNull,
 } from 'routing-controllers';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext, queryPage } from '../utility';
-import { ClinicModel } from '../model';
-import { RoleController } from './Role';
-
-export class Clinic extends LCObject {}
+import { User, UserRole, VerificationBaseFilter, Clinic, ClinicListChunk } from '../model';
+import { VerificationService } from '../service/User';
 
 @JsonController('/clinic')
 export class ClinicController {
+    service = new VerificationService(Clinic, ['name', 'remark']);
+
     @Post()
     @Authorized()
-    async create(
-        @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: ClinicModel
-    ) {
-        let clinic = await new Query(Clinic).equalTo('name', name).first();
-
-        if (clinic)
-            throw new ForbiddenError(
-                '同一义诊机构/个人不能重复发布，请联系原发布者修改'
-            );
-
-        const acl = new ACL();
-
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(user, true),
-            acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
-
-        clinic = await new Clinic()
-            .setACL(acl)
-            .save({ ...rest, name, creator: user, verified: false }, { user });
-
-        return clinic.toJSON();
+    create(@CurrentUser() createdBy: User, @Body() data: Clinic) {
+        return this.service.createOne(data, createdBy);
     }
 
     @Get()
-    getList(
-        @QueryParam('verified') verified: boolean,
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
-    ) {
-        return queryPage(Clinic, {
-            include: ['creator', 'verifier'],
-            equal: { verified },
-            size,
-            index
-        });
+    @ResponseSchema(ClinicListChunk)
+    getList(@QueryParams() filter: VerificationBaseFilter) {
+        return this.service.getList(filter);
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: string) {
-        const clinic = await new Query(Clinic).get(id);
-
-        return clinic.toJSON();
+    @ResponseSchema(Clinic)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return this.service.getOne(id);
     }
 
     @Put('/:id')
     @Authorized()
-    async edit(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { name, ...rest }: ClinicModel
-    ) {
-        let clinic = LCObject.createWithoutData('Clinic', id);
-
-        await clinic.save(
-            { ...rest, verified: false, verifier: null },
-            { user }
-        );
-
-        clinic = await new Query(Clinic).include('creator').get(id);
-
-        return clinic.toJSON();
+    @ResponseSchema(Clinic)
+    edit(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() clinic: Clinic) {
+        return this.service.editOne(id, clinic, updatedBy);
     }
 
-    @Patch('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async verify(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { verified }: { verified: boolean }
-    ) {
-        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
-
-        await LCObject.createWithoutData('Clinic', id).save(
-            { verified, verifier: user },
-            { user }
-        );
+    @Patch('/:id/verification')
+    @Authorized([UserRole.Admin, UserRole.Worker])
+    @ResponseSchema(Clinic)
+    verify(@CurrentUser() verifiedBy: User, @Param('id') id: number) {
+        return this.service.verifyOne(id, verifiedBy);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
-    ) {
-        await LCObject.createWithoutData('Clinic', id).destroy({ user });
+    deleteOne(@Param('id') id: number, @CurrentUser() deletedBy: User) {
+        return this.service.deleteOne(id, deletedBy);
     }
 }

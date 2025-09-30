@@ -1,126 +1,74 @@
-import { Object as LCObject, Query, ACL } from 'leanengine';
 import {
     JsonController,
     Post,
     Authorized,
-    Ctx,
+    CurrentUser,
     Body,
-    ForbiddenError,
     Get,
-    QueryParam,
+    QueryParams,
     Param,
     Put,
     Patch,
+    Delete,
     OnUndefined,
-    Delete
+    OnNull,
 } from 'routing-controllers';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext, queryPage } from '../utility';
-import { DonationRecipientModel } from '../model';
-import { RoleController } from './Role';
-
-export class DonationRecipient extends LCObject {}
+import {
+    User,
+    UserRole,
+    VerificationBaseFilter,
+    DonationRecipient,
+    DonationRecipientListChunk,
+} from '../model';
+import { VerificationService } from '../service/User';
 
 @JsonController('/donation/recipient')
 export class DonationRecipientController {
+    service = new VerificationService(DonationRecipient, ['name', 'remark']);
+
     @Post()
     @Authorized()
-    async create(
-        @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, ...rest }: DonationRecipientModel
-    ) {
-        let donationRecipient = await new Query(DonationRecipient)
-            .equalTo('name', name)
-            .first();
-
-        if (donationRecipient)
-            throw new ForbiddenError(
-                '同一捐款接收方不能重复发布，请联系原发布者修改'
-            );
-
-        const acl = new ACL();
-
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(user, true),
-            acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
-
-        donationRecipient = await new DonationRecipient()
-            .setACL(acl)
-            .save({ ...rest, name, creator: user, verified: false }, { user });
-
-        return donationRecipient.toJSON();
+    create(@CurrentUser() createdBy: User, @Body() data: DonationRecipient) {
+        return this.service.createOne(data, createdBy);
     }
 
     @Get()
-    getList(
-        @QueryParam('verified') verified: boolean,
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
-    ) {
-        return queryPage(DonationRecipient, {
-            include: ['creator', 'verifier'],
-            equal: { verified },
-            size,
-            index
-        });
+    @ResponseSchema(DonationRecipientListChunk)
+    getList(@QueryParams() filter: VerificationBaseFilter) {
+        return this.service.getList(filter);
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: string) {
-        const donationRecipient = await new Query(DonationRecipient).get(id);
-
-        return donationRecipient.toJSON();
+    @ResponseSchema(DonationRecipient)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return this.service.getOne(id);
     }
 
     @Put('/:id')
     @Authorized()
-    async edit(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { name, ...rest }: DonationRecipientModel
+    @ResponseSchema(DonationRecipient)
+    edit(
+        @CurrentUser() updatedBy: User,
+        @Param('id') id: number,
+        @Body() clinic: DonationRecipient,
     ) {
-        let donationRecipient = LCObject.createWithoutData(
-            'DonationRecipient',
-            id
-        );
-        await donationRecipient.save(
-            { ...rest, verified: false, verifier: null },
-            { user }
-        );
-
-        donationRecipient = await new Query(DonationRecipient)
-            .include('creator')
-            .get(id);
-
-        return donationRecipient.toJSON();
+        return this.service.editOne(id, clinic, updatedBy);
     }
 
-    @Patch('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async verify(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { verified }: { verified: boolean }
-    ) {
-        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
-
-        await LCObject.createWithoutData('DonationRecipient', id).save(
-            { verified, verifier: user },
-            { user }
-        );
+    @Patch('/:id/verification')
+    @Authorized([UserRole.Admin, UserRole.Worker])
+    @ResponseSchema(DonationRecipient)
+    verify(@CurrentUser() verifiedBy: User, @Param('id') id: number) {
+        return this.service.verifyOne(id, verifiedBy);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
-    ) {
-        await LCObject.createWithoutData('DonationRecipient', id).destroy({
-            user
-        });
+    deleteOne(@Param('id') id: number, @CurrentUser() deletedBy: User) {
+        return this.service.deleteOne(id, deletedBy);
     }
 }

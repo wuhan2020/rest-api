@@ -1,88 +1,114 @@
+import { createHash } from 'crypto';
+import { sign } from 'jsonwebtoken';
 import {
     JsonController,
     Get,
     Authorized,
-    Ctx,
-    QueryParam,
+    CurrentUser,
+    QueryParams,
     ForbiddenError,
     Param,
     Post,
-    OnUndefined,
-    Delete
+    Put,
+    Body,
+    HttpCode,
+    OnNull
 } from 'routing-controllers';
-import { User, Query, Object as LCObject, Role } from 'leanengine';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext } from '../utility';
-import { RoleController } from './Role';
+import { APP_SECRET, searchConditionOf } from '../utility';
+import {
+    dataSource,
+    User,
+    UserRole,
+    UserFilter,
+    UserListChunk,
+    EmailSignInData,
+    PhoneSignInData,
+    JWTAction
+} from '../model';
+import { activityLogService } from '../service/ActivityLog';
+
+const userStore = dataSource.getRepository(User);
 
 @JsonController('/user')
 export class UserController {
-    static async getUserWithRoles(user: User | string) {
-        if (typeof user === 'string') user = await new Query(User).get(user);
+    static encrypt = (raw: string) =>
+        createHash('sha1')
+            .update(APP_SECRET + raw)
+            .digest('hex');
 
-        const roles = (await user.getRoles()).map(role => role.getName());
+    static sign = (user: User): User => ({
+        ...user,
+        token: sign({ ...user }, APP_SECRET)
+    });
 
-        return { ...user.toJSON(), roles };
+    static async signUp(data: EmailSignInData | PhoneSignInData) {
+        const sum = await userStore.count();
+
+        const { password: _, ...user } = await userStore.save({
+            name: 'email' in data ? data.email : data.mobilePhone,
+            ...data,
+            password: UserController.encrypt(data.password),
+            roles: [sum ? UserRole.Client : UserRole.Admin]
+        });
+        await activityLogService.logCreate(user, 'User', user.id);
+
+        return user;
+    }
+
+    static getSession = ({ context: { state } }: JWTAction) =>
+        'user' in state ? state.user : (console.error(state.jwtOriginalError), null);
+
+    @Post()
+    @HttpCode(201)
+    @ResponseSchema(User)
+    signUp(@Body() data: PhoneSignInData) {
+        return UserController.signUp(data);
     }
 
     @Get()
-    @Authorized()
-    async getList(
-        @Ctx() { currentUser }: LCContext,
-        @QueryParam('phone') phone: string,
-        @QueryParam('pageSize') size = 10,
-        @QueryParam('pageIndex') index = 1
-    ) {
-        if (!(await RoleController.isAdmin(currentUser)))
-            throw new ForbiddenError();
-
-        const query = new Query(User);
-
-        if (phone) query.equalTo('mobilePhoneNumber', phone);
-
-        const count = await query.count({ useMasterKey: true });
-
-        query.skip(size * --index).limit(size);
-
-        const list = await query.find({ useMasterKey: true }),
-            data = [];
-
-        for (const user of list)
-            data.push(await UserController.getUserWithRoles(user));
-
-        return { data, count };
+    // @Authorized(UserRole.Admin)
+    @ResponseSchema(UserListChunk)
+    async getList(@QueryParams() { gender, keywords, pageSize, pageIndex }: UserFilter) {
+        const where = searchConditionOf<User>(
+            ['email', 'mobilePhone', 'name'],
+            keywords,
+            gender && { gender }
+        );
+        const [list, count] = await userStore.findAndCount({
+            where,
+            skip: pageSize * (pageIndex - 1),
+            take: pageSize
+        });
+        return { list, count };
     }
 
     @Get('/:id')
-    getOne(@Param('id') id: string) {
-        return UserController.getUserWithRoles(id);
+    @ResponseSchema(User)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return userStore.findOneBy({ id });
     }
 
-    @Post('/:id/role/:rid')
-    @OnUndefined(201)
-    async addRole(
-        @Ctx() { currentUser }: LCContext,
-        @Param('id') id: string,
-        @Param('rid') rid: string
+    @Put('/:id')
+    @Authorized()
+    @ResponseSchema(User)
+    async updateOne(
+        @Param('id') id: number,
+        @CurrentUser() updatedBy: User,
+        @Body() { password, ...data }: User
     ) {
-        const role = await new Query(Role).get(rid);
+        if (!updatedBy.roles.includes(UserRole.Admin) && id !== updatedBy.id)
+            throw new ForbiddenError();
 
-        role.getUsers().add(LCObject.createWithoutData('_User', id));
+        const saved = await userStore.save({
+            ...data,
+            password: password && UserController.encrypt(password),
+            id
+        });
+        await activityLogService.logUpdate(updatedBy, 'User', id);
 
-        await role.save(null, { user: currentUser });
-    }
-
-    @Delete('/:id/role/:rid')
-    @OnUndefined(204)
-    async removeRole(
-        @Ctx() { currentUser }: LCContext,
-        @Param('id') id: string,
-        @Param('rid') rid: string
-    ) {
-        const role = await new Query(Role).get(rid);
-
-        role.getUsers().remove(LCObject.createWithoutData('_User', id));
-
-        await role.save(null, { user: currentUser });
+        return UserController.sign(saved);
     }
 }

@@ -1,135 +1,64 @@
-import { Object as LCObject, Query, ACL, GeoPoint } from 'leanengine';
 import {
     JsonController,
     Post,
     Authorized,
-    Ctx,
+    CurrentUser,
     Body,
-    ForbiddenError,
     Get,
-    QueryParam,
+    QueryParams,
     Param,
     Put,
     Patch,
+    Delete,
     OnUndefined,
-    Delete
+    OnNull,
 } from 'routing-controllers';
+import { ResponseSchema } from 'routing-controllers-openapi';
 
-import { LCContext, queryPage } from '../utility';
-import { HotelModel } from '../model';
-import { RoleController } from './Role';
-
-export class Hotel extends LCObject {}
+import { User, UserRole, VerificationBaseFilter, Hotel, HotelListChunk } from '../model';
+import { VerificationService } from '../service/User';
 
 @JsonController('/hotel')
 export class HotelController {
+    service = new VerificationService(Hotel, ['name', 'remark']);
+
     @Post()
     @Authorized()
-    async create(
-        @Ctx() { currentUser: user }: LCContext,
-        @Body() { name, coords, ...rest }: HotelModel
-    ) {
-        let hotel = await new Query(Hotel).equalTo('name', name).first();
-
-        if (hotel)
-            throw new ForbiddenError(
-                '同一宾馆不能重复发布，请联系原发布者修改'
-            );
-
-        const acl = new ACL();
-
-        acl.setPublicReadAccess(true),
-            acl.setPublicWriteAccess(false),
-            acl.setWriteAccess(user, true),
-            acl.setRoleWriteAccess(await RoleController.getAdmin(), true);
-
-        hotel = await new Hotel().setACL(acl).save(
-            {
-                ...rest,
-                name,
-                coords: new GeoPoint(coords),
-                creator: user,
-                verified: false
-            },
-            { user }
-        );
-
-        return hotel.toJSON();
+    create(@CurrentUser() createdBy: User, @Body() data: Hotel) {
+        return this.service.createOne(data, createdBy);
     }
 
     @Get()
-    getList(
-        @QueryParam('verified') verified: boolean,
-        @QueryParam('province') province: string,
-        @QueryParam('city') city: string,
-        @QueryParam('district') district: string,
-        @QueryParam('name') name: string,
-        @QueryParam('pageSize') size: number,
-        @QueryParam('pageIndex') index: number
-    ) {
-        return queryPage(Hotel, {
-            include: ['creator', 'verifier'],
-            equal: { verified, province, city, district },
-            contains: { name },
-            size,
-            index
-        });
+    @ResponseSchema(HotelListChunk)
+    getList(@QueryParams() filter: VerificationBaseFilter) {
+        return this.service.getList(filter);
     }
 
     @Get('/:id')
-    async getOne(@Param('id') id: string) {
-        const hotel = await new Query(Hotel).get(id);
-
-        return hotel.toJSON();
+    @ResponseSchema(Hotel)
+    @OnNull(404)
+    getOne(@Param('id') id: number) {
+        return this.service.getOne(id);
     }
 
     @Put('/:id')
     @Authorized()
-    async edit(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { name, coords, ...rest }: HotelModel
-    ) {
-        let hotel = LCObject.createWithoutData('Hotel', id);
-
-        await hotel.save(
-            {
-                ...rest,
-                coords: new GeoPoint(coords),
-                verified: false,
-                verifier: null
-            },
-            { user }
-        );
-
-        hotel = await new Query(Hotel).include('creator').get(id);
-
-        return hotel.toJSON();
+    @ResponseSchema(Hotel)
+    edit(@CurrentUser() updatedBy: User, @Param('id') id: number, @Body() hotel: Hotel) {
+        return this.service.editOne(id, hotel, updatedBy);
     }
 
-    @Patch('/:id')
-    @Authorized()
-    @OnUndefined(204)
-    async verify(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string,
-        @Body() { verified }: { verified: boolean }
-    ) {
-        if (!(await RoleController.isAdmin(user))) throw new ForbiddenError();
-
-        await LCObject.createWithoutData('Hotel', id).save(
-            { verified, verifier: user },
-            { user }
-        );
+    @Patch('/:id/verification')
+    @Authorized([UserRole.Admin, UserRole.Worker])
+    @ResponseSchema(Hotel)
+    verify(@CurrentUser() verifiedBy: User, @Param('id') id: number) {
+        return this.service.verifyOne(id, verifiedBy);
     }
 
     @Delete('/:id')
     @Authorized()
     @OnUndefined(204)
-    async delete(
-        @Ctx() { currentUser: user }: LCContext,
-        @Param('id') id: string
-    ) {
-        await LCObject.createWithoutData('Hotel', id).destroy({ user });
+    deleteOne(@Param('id') id: number, @CurrentUser() deletedBy: User) {
+        return this.service.deleteOne(id, deletedBy);
     }
 }

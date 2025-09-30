@@ -1,15 +1,30 @@
-import { Length, IsArray } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, Min, IsString, Length, ValidateNested } from 'class-validator';
+import { Column, Entity } from 'typeorm';
 
-import { PlaceModel } from './Place';
+import { ListChunk } from './Base';
+import { PlaceBase } from './Place';
 import { Supplies } from './Supplies';
 
-export class VendorModel extends PlaceModel {
-    @Length(2)
-    name: string;
-
+@Entity()
+export class Vendor extends PlaceBase {
+    @IsString()
     @Length(5)
+    @Column()
     qualification: string;
 
-    @IsArray()
+    @Type(() => Supplies)
+    @ValidateNested({ each: true })
+    @Column('simple-json')
     supplies: Supplies[];
+}
+
+export class VendorListChunk implements ListChunk<Vendor> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => Vendor)
+    @ValidateNested({ each: true })
+    list: Vendor[];
 }

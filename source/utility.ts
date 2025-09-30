@@ -1,83 +1,62 @@
-import { Context } from 'koa';
-import { User, Query, AuthOptions, Queriable } from 'leanengine';
+import { S3Client } from '@aws-sdk/client-s3';
+import { config } from 'dotenv';
+import { HTTPClient, HTTPError } from 'koajax';
+import { HttpError } from 'routing-controllers';
+import { FindOptionsWhere, ILike } from 'typeorm';
 
-export interface LCUser extends User {
-    logOut(): any;
-}
+config({ path: [`.env.${process.env.NODE_ENV}.local`, '.env.local', '.env'] });
 
-export interface LCContext extends Context {
-    saveCurrentUser(user: User): any;
-    currentUser: LCUser;
-    clearCurrentUser(): any;
-}
+export const {
+    NODE_ENV,
+    HTTP_PROXY,
+    PORT = 8080,
+    DATABASE_URL,
+    APP_SECRET,
+    LEANCLOUD_API_HOST,
+    LEANCLOUD_APP_ID,
+    LEANCLOUD_APP_KEY,
+    AWS_S3_END_POINT,
+    AWS_S3_BUCKET,
+    AWS_S3_ACCESS_KEY_ID,
+    AWS_S3_SECRET_ACCESS_KEY,
+    AWS_S3_PUBLIC_HOST
+} = process.env;
 
-interface Condition {
-    [key: string]: any;
-}
+export const isProduct = NODE_ENV === 'production';
 
-interface PageQuery {
-    size?: number;
-    index?: number;
-    equal?: Condition;
-    less?: Condition;
-    greater?: Condition;
-    contains?: Condition;
-    exists?: string[];
-    ascend?: string[];
-    descend?: string[];
-    select?: string[];
-    include?: string[];
-    auth?: AuthOptions;
-}
+export const searchConditionOf = <T extends object>(
+    keys: (keyof T)[],
+    keywords = '',
+    filter?: FindOptionsWhere<T>
+) => (keywords ? keys.map(key => ({ [key]: ILike(`%${keywords}%`), ...filter })) : filter);
 
-export async function queryPage<T extends Queriable>(
-    model: new (...args: any[]) => T,
-    {
-        size = 10,
-        index = 1,
-        equal,
-        less,
-        greater,
-        contains,
-        exists = [],
-        ascend = [],
-        descend = ['updatedAt', 'createdAt'],
-        select = [],
-        include = [],
-        auth
-    }: PageQuery
-) {
-    const query = new Query<T>(model);
+export const leanClient = new HTTPClient({
+    baseURI: `https://${LEANCLOUD_API_HOST}/1.1/`,
+    responseType: 'json'
+}).use(async ({ request }, next) => {
+    request.headers = {
+        ...request.headers,
+        'X-LC-Id': LEANCLOUD_APP_ID,
+        'X-LC-Key': LEANCLOUD_APP_KEY
+    };
+    try {
+        await next();
+    } catch (error) {
+        const { response } = error as HTTPError<{
+            code: number;
+            error: string;
+        }>;
+        const { status, body } = response;
 
-    for (const key in equal)
-        if (equal[key] != null) query.equalTo(key, equal[key]);
+        throw new HttpError(status, body.error);
+    }
+});
 
-    for (const key in less)
-        if (less[key] != null) query.lessThanOrEqualTo(key, less[key]);
-
-    for (const key in greater)
-        if (greater[key] != null) query.greaterThanOrEqualTo(key, greater[key]);
-
-    for (const key in contains)
-        if (contains[key] != null) query.contains(key, contains[key]);
-
-    for (const key of exists) query.exists(key);
-
-    const count = await query.count(auth);
-
-    if (!count) return { data: [], count };
-
-    for (const key of ascend) query.addAscending(key);
-
-    for (const key of descend) query.addDescending(key);
-
-    query.limit(size).skip(size * --index);
-
-    if (select[0]) query.select(...select);
-
-    if (include[0]) query.include(...include);
-
-    const data = (await query.find(auth)).map(item => item.toJSON());
-
-    return { data, count };
-}
+export const s3Client = new S3Client({
+    region: 'auto',
+    endpoint: AWS_S3_END_POINT,
+    credentials: {
+        accessKeyId: AWS_S3_ACCESS_KEY_ID,
+        secretAccessKey: AWS_S3_SECRET_ACCESS_KEY
+    }
+});

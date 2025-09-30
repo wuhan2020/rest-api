@@ -1,11 +1,24 @@
-import { Length, IsPositive } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, Min, ValidateNested } from 'class-validator';
+import { Column, Entity } from 'typeorm';
 
-import { PlaceModel } from './Place';
+import { ListChunk } from './Base';
+import { PlaceBase } from './Place';
 
-export class HotelModel extends PlaceModel {
-    @Length(2)
-    name: string;
-
-    @IsPositive()
+@Entity()
+export class Hotel extends PlaceBase {
+    @IsInt()
+    @Min(1)
+    @Column()
     capacity: number;
+}
+
+export class HotelListChunk implements ListChunk<Hotel> {
+    @IsInt()
+    @Min(0)
+    count: number;
+
+    @Type(() => Hotel)
+    @ValidateNested({ each: true })
+    list: Hotel[];
 }

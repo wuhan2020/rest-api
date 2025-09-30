@@ -1,71 +1,79 @@
-import { User } from 'leanengine';
-import { Cloud } from 'leancloud-storage';
 import {
     JsonController,
     Authorized,
     Get,
     Post,
-    Patch,
-    Delete,
     Body,
-    Ctx,
+    CurrentUser,
+    HttpCode,
     OnUndefined
 } from 'routing-controllers';
+import { ResponseSchema } from 'routing-controllers-openapi';
+import { uniqueID } from 'web-utility';
 
-import { LCContext } from '../utility';
-import { UserRole, UserModel } from '../model';
-import { RoleController } from './Role';
+import { dataSource, Captcha, SMSCodeInput, PhoneSignInData, User } from '../model';
+import { leanClient } from '../utility';
 import { UserController } from './User';
 
-interface SignInToken {
-    phone: string;
-    code?: string;
-}
-
-const { ROOT_ACCOUNT } = process.env;
+const userStore = dataSource.getRepository(User);
 
 @JsonController('/session')
 export class SessionController {
-    @Post('/smsCode')
-    sendSMSCode(@Body() { phone }: SignInToken) {
-        return Cloud.requestSmsCode(phone);
+    @Post('/captcha')
+    @ResponseSchema(Captcha)
+    async createCaptcha() {
+        const { body } =
+            await leanClient.get<Record<`captcha_${'token' | 'url'}`, string>>('requestCaptcha');
+
+        return { token: body.captcha_token, link: body.captcha_url };
     }
 
+    static async verifyCaptcha(captcha_token: string, captcha_code: string) {
+        const { body } = await leanClient.post<{ validate_token: string }>('verifyCaptcha', {
+            captcha_code,
+            captcha_token
+        });
+        return { token: body.validate_token };
+    }
+
+    @Post('/session/SMS-code')
+    @OnUndefined(201)
+    async createSMSCode(@Body() { captchaToken, captchaCode, mobilePhone }: SMSCodeInput) {
+        if (captchaToken && captchaCode)
+            var { token } = await SessionController.verifyCaptcha(captchaToken, captchaCode);
+
+        await leanClient.post<{}>('requestSmsCode', {
+            mobilePhoneNumber: mobilePhone,
+            validate_token: token
+        });
+    }
+
+    static verifySMSCode = (mobilePhoneNumber: string, code: string) =>
+        leanClient.post<{}>(`verifySmsCode/${code}`, { mobilePhoneNumber });
+
     @Post('/')
-    async signIn(
-        @Body() { phone, code }: SignInToken,
-        @Ctx() context: LCContext
-    ) {
-        const user = await User.signUpOrlogInWithMobilePhone(phone, code);
+    @HttpCode(201)
+    @ResponseSchema(User)
+    async signIn(@Body() { mobilePhone, password }: PhoneSignInData): Promise<User> {
+        let user = await userStore.findOneBy({
+            mobilePhone,
+            password: UserController.encrypt(password)
+        });
 
-        context.saveCurrentUser(user);
+        if (!user) {
+            await SessionController.verifySMSCode(mobilePhone, password);
 
-        if (phone === ROOT_ACCOUNT && !(await RoleController.isAdmin(user)))
-            await RoleController.create(UserRole.Admin, user);
-
-        return UserController.getUserWithRoles(user);
+            user =
+                (await userStore.findOneBy({ mobilePhone })) ||
+                (await UserController.signUp({ mobilePhone, password: uniqueID() }));
+        }
+        return UserController.sign(user);
     }
 
     @Get('/')
     @Authorized()
-    getProfile(@Ctx() { currentUser: { id } }: LCContext) {
-        return UserController.getUserWithRoles(id);
-    }
-
-    @Patch('/')
-    @Authorized()
-    async editProfile(
-        @Ctx() { currentUser: user }: LCContext,
-        @Body() body: UserModel
-    ) {
-        return (await user.save(body, { user })).toJSON();
-    }
-
-    @Delete('/')
-    @Authorized()
-    @OnUndefined(204)
-    destroy(@Ctx() context: LCContext) {
-        context.currentUser.logOut();
-        context.clearCurrentUser();
+    @ResponseSchema(User)
+    getSession(@CurrentUser() user: User) {
+        return user;
     }
 }
