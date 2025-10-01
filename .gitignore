@@ -64,5 +64,5 @@ typings/
 
 # Development environment
 .data/
-type/*.d.ts
+type/**/*.d.ts
 test/client.ts

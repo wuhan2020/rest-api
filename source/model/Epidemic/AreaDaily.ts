@@ -46,31 +46,31 @@ export class EpidemicAreaDaily extends Base {
 
     @IsPostalCode()
     @IsOptional()
-    @Column({ name: 'province_zipCode', nullable: true })
+    @Column({ nullable: true })
     provinceZipCode?: string;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'province_confirmedCount', nullable: true })
+    @Column('integer', { nullable: true })
     provinceConfirmedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'province_suspectedCount', nullable: true })
+    @Column('integer', { nullable: true })
     provinceSuspectedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'province_curedCount', nullable: true })
+    @Column('integer', { nullable: true })
     provinceCuredCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'province_deadCount', nullable: true })
+    @Column('integer', { nullable: true })
     provinceDeadCount?: number;
 
     @IsDateString()
@@ -90,31 +90,31 @@ export class EpidemicAreaDaily extends Base {
 
     @IsPostalCode()
     @IsOptional()
-    @Column({ name: 'city_zipCode', nullable: true })
+    @Column({ nullable: true })
     cityZipCode?: string;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'city_confirmedCount', nullable: true })
+    @Column('integer', { nullable: true })
     cityConfirmedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'city_suspectedCount', nullable: true })
+    @Column('integer', { nullable: true })
     citySuspectedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'city_curedCount', nullable: true })
+    @Column('integer', { nullable: true })
     cityCuredCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
-    @Column('integer', { name: 'city_deadCount', nullable: true })
+    @Column('integer', { nullable: true })
     cityDeadCount?: number;
 }
 

@@ -121,42 +121,42 @@ export class EpidemicOverall extends Base {
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'remark1', nullable: true })
+    @Column({ nullable: true })
     remark1?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'remark2', nullable: true })
+    @Column({ nullable: true })
     remark2?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'remark3', nullable: true })
+    @Column({ nullable: true })
     remark3?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'remark4', nullable: true })
+    @Column({ nullable: true })
     remark4?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'remark5', nullable: true })
+    @Column({ nullable: true })
     remark5?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'note1', nullable: true })
+    @Column({ nullable: true })
     note1?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'note2', nullable: true })
+    @Column({ nullable: true })
     note2?: string;
 
     @IsString()
     @IsOptional()
-    @Column({ name: 'note3', nullable: true })
+    @Column({ nullable: true })
     note3?: string;
 
     @IsString()
