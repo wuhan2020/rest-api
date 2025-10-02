@@ -2,7 +2,7 @@ import { NotFoundError } from 'routing-controllers';
 import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Constructor } from 'web-utility';
 
-import { dataSource, Base, BaseFilter, ListChunk } from '../model';
+import { Base, BaseFilter, dataSource, ListChunk } from '../model';
 import { searchConditionOf } from '../utility';
 
 export class BaseService<T extends Base> {
@@ -11,12 +11,13 @@ export class BaseService<T extends Base> {
 
     constructor(
         public entityClass: Constructor<T>,
-        public searchKeys: (keyof T)[],
+        public searchKeys: (keyof T)[] = []
     ) {
         this.store = dataSource.getRepository(entityClass);
         this.tableName = entityClass.name;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createOne(data: Partial<T>, ...rest: any[]) {
         return this.store.save(data as T);
     }
@@ -25,6 +26,7 @@ export class BaseService<T extends Base> {
         return this.store.findOne({ where: { id } as FindOptionsWhere<T>, relations });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async editOne(id: number, data: Partial<T>, ...rest: any[]) {
         const { store, tableName } = this;
 
@@ -35,6 +37,7 @@ export class BaseService<T extends Base> {
         return store.save({ ...data, id } as T);
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     deleteOne(id: number, ...rest: any[]) {
         return this.store.delete(id);
     }
@@ -42,13 +45,13 @@ export class BaseService<T extends Base> {
     async getList(
         { keywords, pageSize, pageIndex }: BaseFilter,
         where = searchConditionOf<T>(this.searchKeys, keywords),
-        options?: FindManyOptions<T>,
+        options = { order: { updatedAt: 'DESC' } } as FindManyOptions<T>
     ) {
         const [list, count] = await this.store.findAndCount({
             ...options,
             where,
             skip: pageSize * (pageIndex - 1),
-            take: pageSize,
+            take: pageSize
         });
         return { list, count } as ListChunk<T>;
     }

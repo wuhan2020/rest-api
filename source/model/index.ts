@@ -7,13 +7,13 @@ import { ActivityLog, UserRank } from './ActivityLog';
 import { Clinic } from './Clinic';
 import { DonationRecipient } from './Donation';
 import {
-    CityMonthlyStats,
-    CountryMonthlyStats,
     EpidemicAreaDaily,
+    EpidemicCityMonthly,
+    EpidemicCountryMonthly,
     EpidemicNews,
     EpidemicOverall,
-    EpidemicRumor,
-    ProvinceMonthlyStats
+    EpidemicProvinceMonthly,
+    EpidemicRumor
 } from './Epidemic';
 import { Hotel } from './Hotel';
 import { Logistics } from './Logistics';
@@ -38,9 +38,9 @@ const entities = [
     EpidemicRumor,
     EpidemicNews,
     EpidemicAreaDaily,
-    CountryMonthlyStats,
-    ProvinceMonthlyStats,
-    CityMonthlyStats,
+    EpidemicCountryMonthly,
+    EpidemicProvinceMonthly,
+    EpidemicCityMonthly,
     EpidemicOverall
 ];
 

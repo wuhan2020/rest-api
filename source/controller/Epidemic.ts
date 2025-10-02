@@ -12,19 +12,20 @@ import { ResponseSchema } from 'routing-controllers-openapi';
 import {
     AreaDailyListChunk,
     BaseFilter,
-    CityMonthlyStats,
-    CityMonthlyStatsListChunk,
-    CountryMonthlyStats,
-    CountryMonthlyStatsListChunk,
     dataSource,
     EpidemicAreaDaily,
+    EpidemicCityMonthly,
+    EpidemicCityMonthlyListChunk,
+    EpidemicCountryMonthly,
+    EpidemicCountryMonthlyListChunk,
+    EpidemicMonthlyFilter,
     EpidemicNews,
     EpidemicOverall,
+    EpidemicProvinceMonthly,
+    EpidemicProvinceMonthlyListChunk,
     EpidemicRumor,
     NewsListChunk,
     OverallListChunk,
-    ProvinceMonthlyStats,
-    ProvinceMonthlyStatsListChunk,
     RumorListChunk,
     UserRole
 } from '../model';
@@ -154,44 +155,38 @@ export class EpidemicOverallController {
     }
 }
 
-@JsonController('/epidemic/monthly-stats/country')
-export class CountryMonthlyStatsController {
-    store = dataSource.getRepository(CountryMonthlyStats);
+@JsonController('/epidemic/area-monthly')
+export class EpidemicAreaMonthlyController {
+    countryMonthlyStore = dataSource.getRepository(EpidemicCountryMonthly);
+    provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
+    cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
 
-    @Get()
-    @ResponseSchema(CountryMonthlyStatsListChunk)
-    async getList(@QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        const [list, count] = await this.store.findAndCount({
+    @Get('/country')
+    @ResponseSchema(EpidemicCountryMonthlyListChunk)
+    async getCountryList(@QueryParams() { pageSize, pageIndex }: BaseFilter) {
+        const [list, count] = await this.countryMonthlyStore.findAndCount({
             skip: pageSize * (pageIndex - 1),
             take: pageSize
         });
         return { list, count };
     }
-}
 
-@JsonController('/epidemic/monthly-stats/province')
-export class ProvinceMonthlyStatsController {
-    store = dataSource.getRepository(ProvinceMonthlyStats);
-
-    @Get()
-    @ResponseSchema(ProvinceMonthlyStatsListChunk)
-    async getList(@QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        const [list, count] = await this.store.findAndCount({
+    @Get('/province')
+    @ResponseSchema(EpidemicProvinceMonthlyListChunk)
+    async getProvinceList(@QueryParams() { superior, pageSize, pageIndex }: EpidemicMonthlyFilter) {
+        const [list, count] = await this.provinceMonthlyStore.findAndCount({
+            where: { countryName: superior },
             skip: pageSize * (pageIndex - 1),
             take: pageSize
         });
         return { list, count };
     }
-}
 
-@JsonController('/epidemic/monthly-stats/city')
-export class CityMonthlyStatsController {
-    store = dataSource.getRepository(CityMonthlyStats);
-
-    @Get()
-    @ResponseSchema(CityMonthlyStatsListChunk)
-    async getList(@QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        const [list, count] = await this.store.findAndCount({
+    @Get('/city')
+    @ResponseSchema(EpidemicCityMonthlyListChunk)
+    async getCityList(@QueryParams() { superior, pageSize, pageIndex }: EpidemicMonthlyFilter) {
+        const [list, count] = await this.cityMonthlyStore.findAndCount({
+            where: { provinceName: superior },
             skip: pageSize * (pageIndex - 1),
             take: pageSize
         });
@@ -203,8 +198,6 @@ export const epidemicControllers = [
     EpidemicNewsController,
     EpidemicRumorController,
     EpidemicAreaDailyController,
-    EpidemicOverallController,
-    CountryMonthlyStatsController,
-    ProvinceMonthlyStatsController,
-    CityMonthlyStatsController
+    EpidemicAreaMonthlyController,
+    EpidemicOverallController
 ];
