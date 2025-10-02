@@ -6,20 +6,28 @@ import { ListChunk } from '../Base';
 import { EpidemicAreaDaily } from './AreaDaily';
 
 @ViewEntity({
-    expression: connection =>
-        connection
+    expression: connection => {
+        const qb = connection
             .createQueryBuilder()
             .from(EpidemicAreaDaily, 'ead')
             .where('ead.countryName IS NOT NULL')
-            .groupBy('ead.countryName')
-            .addGroupBy("strftime('%Y-%m', ead.updateTime)")
+            .groupBy('ead.countryName');
+
+        const isPostgres = connection.options.type === 'postgres';
+        const monthExpression = isPostgres
+            ? "TO_CHAR(ead.updateTime, 'YYYY-MM')"
+            : "strftime('%Y-%m', ead.updateTime)";
+
+        return qb
+            .addGroupBy(monthExpression)
             .select('ead.countryName', 'countryName')
             .addSelect('ead.countryEnglishName', 'countryEnglishName')
-            .addSelect("strftime('%Y-%m', ead.updateTime)", 'month')
+            .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.provinceConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.provinceSuspectedCount)', 'suspectedCount')
             .addSelect('SUM(ead.provinceCuredCount)', 'curedCount')
-            .addSelect('SUM(ead.provinceDeadCount)', 'deadCount')
+            .addSelect('SUM(ead.provinceDeadCount)', 'deadCount');
+    }
 })
 export class CountryMonthlyStats {
     @IsString()
@@ -67,22 +75,30 @@ export class CountryMonthlyStatsListChunk implements ListChunk<CountryMonthlySta
 }
 
 @ViewEntity({
-    expression: connection =>
-        connection
+    expression: connection => {
+        const qb = connection
             .createQueryBuilder()
             .from(EpidemicAreaDaily, 'ead')
             .where('ead.provinceName IS NOT NULL')
             .groupBy('ead.countryName')
-            .addGroupBy('ead.provinceName')
-            .addGroupBy("strftime('%Y-%m', ead.updateTime)")
+            .addGroupBy('ead.provinceName');
+
+        const isPostgres = connection.options.type === 'postgres';
+        const monthExpression = isPostgres
+            ? "TO_CHAR(ead.updateTime, 'YYYY-MM')"
+            : "strftime('%Y-%m', ead.updateTime)";
+
+        return qb
+            .addGroupBy(monthExpression)
             .select('ead.countryName', 'countryName')
             .addSelect('ead.provinceName', 'provinceName')
             .addSelect('ead.provinceEnglishName', 'provinceEnglishName')
-            .addSelect("strftime('%Y-%m', ead.updateTime)", 'month')
+            .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.provinceConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.provinceSuspectedCount)', 'suspectedCount')
             .addSelect('SUM(ead.provinceCuredCount)', 'curedCount')
-            .addSelect('SUM(ead.provinceDeadCount)', 'deadCount')
+            .addSelect('SUM(ead.provinceDeadCount)', 'deadCount');
+    }
 })
 export class ProvinceMonthlyStats {
     @IsString()
@@ -134,22 +150,30 @@ export class ProvinceMonthlyStatsListChunk implements ListChunk<ProvinceMonthlyS
 }
 
 @ViewEntity({
-    expression: connection =>
-        connection
+    expression: connection => {
+        const qb = connection
             .createQueryBuilder()
             .from(EpidemicAreaDaily, 'ead')
             .where('ead.cityName IS NOT NULL')
             .groupBy('ead.provinceName')
-            .addGroupBy('ead.cityName')
-            .addGroupBy("strftime('%Y-%m', ead.updateTime)")
+            .addGroupBy('ead.cityName');
+
+        const isPostgres = connection.options.type === 'postgres';
+        const monthExpression = isPostgres
+            ? "TO_CHAR(ead.updateTime, 'YYYY-MM')"
+            : "strftime('%Y-%m', ead.updateTime)";
+
+        return qb
+            .addGroupBy(monthExpression)
             .select('ead.provinceName', 'provinceName')
             .addSelect('ead.cityName', 'cityName')
             .addSelect('ead.cityEnglishName', 'cityEnglishName')
-            .addSelect("strftime('%Y-%m', ead.updateTime)", 'month')
+            .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.cityConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.citySuspectedCount)', 'suspectedCount')
             .addSelect('SUM(ead.cityCuredCount)', 'curedCount')
-            .addSelect('SUM(ead.cityDeadCount)', 'deadCount')
+            .addSelect('SUM(ead.cityDeadCount)', 'deadCount');
+    }
 })
 export class CityMonthlyStats {
     @IsString()
