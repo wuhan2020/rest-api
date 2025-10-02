@@ -1,23 +1,22 @@
 import {
-    JsonController,
-    Get,
     Authorized,
+    Body,
     CurrentUser,
-    QueryParams,
     ForbiddenError,
+    Get,
+    HttpCode,
+    JsonController,
+    OnNull,
     Param,
     Post,
     Put,
-    Body,
-    HttpCode,
-    OnNull,
+    QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
 
+import { PhoneSignInData, User, UserFilter, UserListChunk, UserRole } from '../model';
+import { activityLogService, sessionService } from '../service';
 import { searchConditionOf } from '../utility';
-import { User, UserRole, UserFilter, UserListChunk, PhoneSignInData } from '../model';
-import { activityLogService } from '../service';
-import { sessionService } from '../service';
 
 @JsonController('/user')
 export class UserController {
@@ -37,12 +36,12 @@ export class UserController {
         const where = searchConditionOf<User>(
             ['email', 'mobilePhone', 'name'],
             keywords,
-            gender && { gender },
+            gender && { gender }
         );
         const [list, count] = await this.store.findAndCount({
             where,
             skip: pageSize * (pageIndex - 1),
-            take: pageSize,
+            take: pageSize
         });
         return { list, count };
     }
@@ -60,7 +59,7 @@ export class UserController {
     async updateOne(
         @Param('id') id: number,
         @CurrentUser() updatedBy: User,
-        @Body() { password, ...data }: User,
+        @Body() { password, ...data }: User
     ) {
         if (!updatedBy.roles.includes(UserRole.Admin) && id !== updatedBy.id)
             throw new ForbiddenError();
@@ -68,7 +67,7 @@ export class UserController {
         const saved = await this.store.save({
             ...data,
             password: password && sessionService.encrypt(password),
-            id,
+            id
         });
         await activityLogService.logUpdate(updatedBy, 'User', id);
 
