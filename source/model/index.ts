@@ -3,15 +3,23 @@ import { DataSource } from 'typeorm';
 import { SqliteConnectionOptions } from 'typeorm/driver/sqlite/SqliteConnectionOptions';
 
 import { DATABASE_URL, isProduct } from '../utility';
-import { ActivityLog } from './ActivityLog';
+import { ActivityLog, UserRank } from './ActivityLog';
+import { Clinic } from './Clinic';
+import { DonationRecipient } from './Donation';
+import {
+    CityMonthlyStats,
+    CountryMonthlyStats,
+    EpidemicAreaDaily,
+    EpidemicNews,
+    EpidemicOverall,
+    EpidemicRumor,
+    ProvinceMonthlyStats
+} from './Epidemic';
+import { Hotel } from './Hotel';
+import { Logistics } from './Logistics';
+import { SuppliesRequirement } from './Supplies';
 import { User } from './User';
 import { Vendor } from './Vendor';
-import { Logistics } from './Logistics';
-import { Clinic } from './Clinic';
-import { Hotel } from './Hotel';
-import { SuppliesRequirement } from './Supplies';
-import { DonationRecipient } from './Donation';
-import { EpidemicAreaDaily, EpidemicNews, EpidemicOverall, EpidemicRumor } from './Epidemic';
 
 const { ssl, host, port, user, password, database } = isProduct
     ? parse(DATABASE_URL)
@@ -20,6 +28,7 @@ const { ssl, host, port, user, password, database } = isProduct
 const entities = [
     User,
     ActivityLog,
+    UserRank,
     Vendor,
     Logistics,
     Clinic,
@@ -29,7 +38,10 @@ const entities = [
     EpidemicRumor,
     EpidemicNews,
     EpidemicAreaDaily,
-    EpidemicOverall,
+    CountryMonthlyStats,
+    ProvinceMonthlyStats,
+    CityMonthlyStats,
+    EpidemicOverall
 ];
 
 const commonOptions: Pick<
@@ -39,7 +51,7 @@ const commonOptions: Pick<
     logging: true,
     synchronize: true,
     entities,
-    migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`],
+    migrations: [`${isProduct ? '.data' : 'migration'}/*.ts`]
 };
 
 export const dataSource = isProduct
@@ -51,24 +63,24 @@ export const dataSource = isProduct
           username: user,
           password,
           database,
-          ...commonOptions,
+          ...commonOptions
       })
     : new DataSource({
           type: 'better-sqlite3',
           database: '.data/test.db',
-          ...commonOptions,
+          ...commonOptions
       });
 
 export * from './ActivityLog';
 export * from './Base';
-export * from './File';
-export * from './User';
-export * from './Session';
-export * from './Place';
-export * from './Vendor';
-export * from './Logistics';
 export * from './Clinic';
-export * from './Hotel';
-export * from './Supplies';
 export * from './Donation';
 export * from './Epidemic';
+export * from './File';
+export * from './Hotel';
+export * from './Logistics';
+export * from './Place';
+export * from './Session';
+export * from './Supplies';
+export * from './User';
+export * from './Vendor';
