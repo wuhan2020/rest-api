@@ -3,26 +3,27 @@ import {
     Body,
     Get,
     JsonController,
+    OnUndefined,
     Param,
     Post,
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
+import { Between, FindOptionsWhere } from 'typeorm';
+import { formatDate, makeDateRange } from 'web-utility';
 
 import {
     AreaDailyListChunk,
     BaseFilter,
     dataSource,
     EpidemicAreaDaily,
+    EpidemicAreaFilter,
+    EpidemicAreaReport,
     EpidemicCityMonthly,
-    EpidemicCityMonthlyListChunk,
     EpidemicCountryMonthly,
-    EpidemicCountryMonthlyListChunk,
-    EpidemicMonthlyFilter,
     EpidemicNews,
     EpidemicOverall,
     EpidemicProvinceMonthly,
-    EpidemicProvinceMonthlyListChunk,
     EpidemicRumor,
     NewsListChunk,
     OverallListChunk,
@@ -85,9 +86,9 @@ export class EpidemicRumorController {
     }
 }
 
-@JsonController('/epidemic/area-daily')
-export class EpidemicAreaDailyController {
-    service = new BaseService(EpidemicAreaDaily, [
+@JsonController('/epidemic/area-report')
+export class EpidemicAreaReportController {
+    dailyService = new BaseService(EpidemicAreaDaily, [
         'continentName',
         'continentEnglishName',
         'countryName',
@@ -97,24 +98,54 @@ export class EpidemicAreaDailyController {
         'cityName',
         'cityEnglishName'
     ]);
+    countryMonthlyStore = dataSource.getRepository(EpidemicCountryMonthly);
+    provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
+    cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
 
     @Post()
     @Authorized(UserRole.Admin)
     @ResponseSchema(EpidemicAreaDaily)
     createOne(@Body() data: EpidemicAreaDaily) {
-        return this.service.createOne(data);
+        return this.dailyService.createOne(data);
     }
 
     @Get('/:id')
     @ResponseSchema(EpidemicAreaDaily)
     getOne(@Param('id') id: number) {
-        return this.service.getOne(id);
+        return this.dailyService.getOne(id);
     }
 
     @Get()
     @ResponseSchema(AreaDailyListChunk)
-    getList(@QueryParams() filter: BaseFilter) {
-        return this.service.getList(filter);
+    @OnUndefined(400)
+    async getList(@QueryParams() { updateTime, ...filter }: EpidemicAreaFilter) {
+        if (updateTime?.match(/^\d{4}-\d{2}-\d{2}$/))
+            return this.dailyService.getList({ ...filter, updateTime });
+
+        if (!updateTime?.match(/^\d{4}-\d{2}$/)) return;
+
+        const [start, end] = makeDateRange(updateTime),
+            { continentName, countryName, provinceName, pageSize, pageIndex } = filter;
+
+        const where: FindOptionsWhere<EpidemicAreaReport> = {
+            ...filter,
+            updateTime: Between(formatDate(start, 'YYYY-MM-DD'), formatDate(end, 'YYYY-MM-DD'))
+        };
+        const store = continentName
+            ? this.countryMonthlyStore
+            : countryName
+              ? this.provinceMonthlyStore
+              : provinceName && this.cityMonthlyStore;
+
+        if (!store) return;
+
+        const [list, count] = await store.findAndCount({
+            where,
+            order: { month: 'DESC' },
+            skip: pageSize * (pageIndex - 1),
+            take: pageSize
+        });
+        return { list, count };
     }
 }
 
@@ -155,49 +186,9 @@ export class EpidemicOverallController {
     }
 }
 
-@JsonController('/epidemic/area-monthly')
-export class EpidemicAreaMonthlyController {
-    countryMonthlyStore = dataSource.getRepository(EpidemicCountryMonthly);
-    provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
-    cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
-
-    @Get('/country')
-    @ResponseSchema(EpidemicCountryMonthlyListChunk)
-    async getCountryList(@QueryParams() { pageSize, pageIndex }: BaseFilter) {
-        const [list, count] = await this.countryMonthlyStore.findAndCount({
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
-    }
-
-    @Get('/province')
-    @ResponseSchema(EpidemicProvinceMonthlyListChunk)
-    async getProvinceList(@QueryParams() { superior, pageSize, pageIndex }: EpidemicMonthlyFilter) {
-        const [list, count] = await this.provinceMonthlyStore.findAndCount({
-            where: { countryName: superior },
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
-    }
-
-    @Get('/city')
-    @ResponseSchema(EpidemicCityMonthlyListChunk)
-    async getCityList(@QueryParams() { superior, pageSize, pageIndex }: EpidemicMonthlyFilter) {
-        const [list, count] = await this.cityMonthlyStore.findAndCount({
-            where: { provinceName: superior },
-            skip: pageSize * (pageIndex - 1),
-            take: pageSize
-        });
-        return { list, count };
-    }
-}
-
 export const epidemicControllers = [
     EpidemicNewsController,
     EpidemicRumorController,
-    EpidemicAreaDailyController,
-    EpidemicAreaMonthlyController,
+    EpidemicAreaReportController,
     EpidemicOverallController
 ];

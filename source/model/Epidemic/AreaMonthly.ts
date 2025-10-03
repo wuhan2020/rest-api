@@ -2,8 +2,8 @@ import { Type } from 'class-transformer';
 import { IsInt, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { ViewColumn, ViewEntity } from 'typeorm';
 
-import { BaseFilter, ListChunk } from '../Base';
-import { EpidemicAreaDaily } from './AreaDaily';
+import { ListChunk } from '../Base';
+import { EpidemicAreaDaily, EpidemicAreaReport } from './AreaDaily';
 
 abstract class EpidemicMonthly {
     @IsString()
@@ -44,8 +44,8 @@ abstract class EpidemicMonthly {
                 : "strftime('%Y-%m', ead.updateTime)";
         return qb
             .addGroupBy(monthExpression)
-            .select('ead.countryName', 'countryName')
-            .addSelect('ead.countryEnglishName', 'countryEnglishName')
+            .select('ead.continentName', 'continentName')
+            .addSelect('ead.countryName', 'countryName')
             .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.provinceConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.provinceSuspectedCount)', 'suspectedCount')
@@ -53,21 +53,15 @@ abstract class EpidemicMonthly {
             .addSelect('SUM(ead.provinceDeadCount)', 'deadCount');
     }
 })
-export class EpidemicCountryMonthly extends EpidemicMonthly {
+export class EpidemicCountryMonthly extends EpidemicMonthly implements EpidemicAreaReport {
+    @IsString()
+    @IsOptional()
+    @ViewColumn()
+    continentName?: string;
+
     @IsString()
     @ViewColumn()
     countryName: string;
-
-    @IsString()
-    @IsOptional()
-    @ViewColumn()
-    countryEnglishName?: string;
-}
-
-export class EpidemicMonthlyFilter extends BaseFilter {
-    @IsString()
-    @IsOptional()
-    superior?: string;
 }
 
 export class EpidemicCountryMonthlyListChunk implements ListChunk<EpidemicCountryMonthly> {
@@ -96,7 +90,6 @@ export class EpidemicCountryMonthlyListChunk implements ListChunk<EpidemicCountr
             .addGroupBy(monthExpression)
             .select('ead.countryName', 'countryName')
             .addSelect('ead.provinceName', 'provinceName')
-            .addSelect('ead.provinceEnglishName', 'provinceEnglishName')
             .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.provinceConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.provinceSuspectedCount)', 'suspectedCount')
@@ -112,11 +105,6 @@ export class EpidemicProvinceMonthly extends EpidemicMonthly {
     @IsString()
     @ViewColumn()
     provinceName: string;
-
-    @IsString()
-    @IsOptional()
-    @ViewColumn()
-    provinceEnglishName?: string;
 }
 
 export class EpidemicProvinceMonthlyListChunk implements ListChunk<EpidemicProvinceMonthly> {
@@ -145,7 +133,6 @@ export class EpidemicProvinceMonthlyListChunk implements ListChunk<EpidemicProvi
             .addGroupBy(monthExpression)
             .select('ead.provinceName', 'provinceName')
             .addSelect('ead.cityName', 'cityName')
-            .addSelect('ead.cityEnglishName', 'cityEnglishName')
             .addSelect(monthExpression, 'month')
             .addSelect('SUM(ead.cityConfirmedCount)', 'confirmedCount')
             .addSelect('SUM(ead.citySuspectedCount)', 'suspectedCount')
@@ -161,11 +148,6 @@ export class EpidemicCityMonthly extends EpidemicMonthly {
     @IsString()
     @ViewColumn()
     cityName: string;
-
-    @IsString()
-    @IsOptional()
-    @ViewColumn()
-    cityEnglishName?: string;
 }
 
 export class EpidemicCityMonthlyListChunk implements ListChunk<EpidemicCityMonthly> {

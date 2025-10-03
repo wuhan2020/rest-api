@@ -1,6 +1,6 @@
 {
     "name": "@wuhan2020/rest-api",
-    "version": "2.0.0-rc.2",
+    "version": "2.0.0-rc.3",
     "types": "index.d.ts",
     "dependencies": {
         "@types/jsonwebtoken": "^9.0.10",
