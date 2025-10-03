@@ -1,18 +1,20 @@
 import { ForbiddenError, NotFoundError } from 'routing-controllers';
 import { FindManyOptions, FindOneOptions, FindOptionsWhere, IsNull, Not } from 'typeorm';
 
-import { searchConditionOf } from '../utility';
 import {
+    ActivityLog,
+    BaseFilter,
+    InputData,
     User,
-    UserRole,
     UserBase,
     UserBaseFilter,
-    ActivityLog,
+    UserRole,
     VerificationBase,
-    VerificationBaseFilter,
+    VerificationBaseFilter
 } from '../model';
-import { BaseService } from './Base';
+import { searchConditionOf } from '../utility';
 import { activityLogService } from './ActivityLog';
+import { BaseService } from './Base';
 
 export class UserService<T extends UserBase> extends BaseService<T> {
     createOne(data: Partial<T>, createdBy: User) {
@@ -45,7 +47,7 @@ export class UserService<T extends UserBase> extends BaseService<T> {
 
         const oldOne = await store.findOne({
             where: { id } as FindOptionsWhere<T>,
-            relations: ['createdBy'],
+            relations: ['createdBy']
         });
 
         if (!oldOne) throw new NotFoundError(`${tableName} ${id} is not found`);
@@ -60,14 +62,18 @@ export class UserService<T extends UserBase> extends BaseService<T> {
     getList(
         { createdBy, updatedBy, keywords, ...filter }: UserBaseFilter,
         where?: FindOneOptions<T>['where'],
-        options: FindManyOptions<T> = { relations: ['createdBy'] },
+        options: FindManyOptions<T> = { relations: ['createdBy'] }
     ) {
         where ??= searchConditionOf<T>(this.searchKeys, keywords, {
             ...(createdBy ? { createdBy: { id: createdBy } } : {}),
-            ...(updatedBy ? { updatedBy: { id: updatedBy } } : {}),
+            ...(updatedBy ? { updatedBy: { id: updatedBy } } : {})
         } as FindOptionsWhere<T>);
 
-        return super.getList({ keywords, ...filter }, where, options);
+        return super.getList(
+            { keywords, ...filter } as Partial<InputData<T>> & BaseFilter,
+            where,
+            options
+        );
     }
 }
 
@@ -112,7 +118,7 @@ export class VerificationService<T extends VerificationBase> extends CRUDService
         return super.editOne(
             id,
             { ...data, verifiedAt: null, verifiedBy: null } as Partial<T>,
-            updatedBy,
+            updatedBy
         );
     }
 
@@ -120,17 +126,17 @@ export class VerificationService<T extends VerificationBase> extends CRUDService
         return super.editOne(
             id,
             { verifiedAt: new Date() + '', verifiedBy } as Partial<T>,
-            verifiedBy,
+            verifiedBy
         );
     }
 
     getList(
         { verified, keywords, ...filter }: VerificationBaseFilter,
         where?: FindOneOptions<T>['where'],
-        options: FindManyOptions<T> = { relations: ['createdBy', 'verifiedBy'] },
+        options: FindManyOptions<T> = { relations: ['createdBy', 'verifiedBy'] }
     ) {
         where ??= searchConditionOf<T>(this.searchKeys, keywords, {
-            verifiedAt: verified ? Not(IsNull()) : verified === false ? IsNull() : undefined,
+            verifiedAt: verified ? Not(IsNull()) : verified === false ? IsNull() : undefined
         } as FindOptionsWhere<T>);
 
         return super.getList({ keywords, ...filter }, where, options);

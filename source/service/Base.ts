@@ -43,7 +43,12 @@ export class BaseService<T extends Base> {
     }
 
     async getList(
-        { keywords, pageSize, pageIndex, ...filter }: Partial<InputData<T>> & BaseFilter = {},
+        {
+            keywords,
+            pageSize = 10,
+            pageIndex = 1,
+            ...filter
+        }: Partial<InputData<T>> & BaseFilter = {},
         where = searchConditionOf<T>(this.searchKeys, keywords, filter as FindOptionsWhere<T>),
         options = { order: { updatedAt: 'DESC' } } as FindManyOptions<T>
     ) {
