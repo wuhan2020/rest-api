@@ -18,10 +18,13 @@ import {
     EpidemicAreaDailyListChunk,
     EpidemicAreaFilter,
     EpidemicCityMonthly,
+    EpidemicCityMonthlyListChunk,
     EpidemicCountryMonthly,
+    EpidemicCountryMonthlyListChunk,
     EpidemicNews,
     EpidemicOverall,
     EpidemicProvinceMonthly,
+    EpidemicProvinceMonthlyListChunk,
     EpidemicRumor,
     NewsListChunk,
     OverallListChunk,
@@ -125,24 +128,57 @@ export class EpidemicAreaMonthlyController {
     provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
     cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
 
-    @Get()
-    @ResponseSchema(EpidemicAreaDailyListChunk)
-    async getList(@QueryParams() { updateTime, ...filter }: EpidemicAreaFilter) {
-        const month = updateTime && formatDate(updateTime, 'YYYY-MM');
+    @Get('/country')
+    @ResponseSchema(EpidemicCountryMonthlyListChunk)
+    async getCountryList(
+        @QueryParams()
+        { continentName, countryName, updateTime, pageSize, pageIndex }: EpidemicAreaFilter
+    ) {
+        const [list, count] = await this.countryMonthlyStore.findAndCount({
+            where: {
+                ...(updateTime && { month: updateTime }),
+                ...(continentName && { continentName }),
+                ...(countryName && { countryName })
+            },
+            order: { month: 'ASC' },
+            skip: pageSize * (pageIndex - 1),
+            take: pageSize
+        });
+        return { list, count };
+    }
 
-        const { continentName, countryName, provinceName, pageSize, pageIndex } = filter;
+    @Get('/province')
+    @ResponseSchema(EpidemicProvinceMonthlyListChunk)
+    async getProvinceList(
+        @QueryParams()
+        { countryName, provinceName, updateTime, pageSize, pageIndex }: EpidemicAreaFilter
+    ) {
+        const [list, count] = await this.provinceMonthlyStore.findAndCount({
+            where: {
+                ...(updateTime && { month: updateTime }),
+                ...(countryName && { countryName }),
+                ...(provinceName && { provinceName })
+            },
+            order: { month: 'ASC' },
+            skip: pageSize * (pageIndex - 1),
+            take: pageSize
+        });
+        return { list, count };
+    }
 
-        const store = continentName
-            ? this.countryMonthlyStore
-            : countryName
-              ? this.provinceMonthlyStore
-              : provinceName && this.cityMonthlyStore;
-
-        if (!store) return;
-
-        const [list, count] = await store.findAndCount({
-            where: { ...filter, ...(month && { month }) },
-            order: { month: 'DESC' },
+    @Get('/city')
+    @ResponseSchema(EpidemicCityMonthlyListChunk)
+    async getCityList(
+        @QueryParams()
+        { provinceName, cityName, updateTime, pageSize, pageIndex }: EpidemicAreaFilter
+    ) {
+        const [list, count] = await this.cityMonthlyStore.findAndCount({
+            where: {
+                ...(updateTime && { month: updateTime }),
+                ...(provinceName && { provinceName }),
+                ...(cityName && { cityName })
+            },
+            order: { month: 'ASC' },
             skip: pageSize * (pageIndex - 1),
             take: pageSize
         });
