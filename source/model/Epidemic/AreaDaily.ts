@@ -10,7 +10,7 @@ import {
 } from 'class-validator';
 import { Column, Entity } from 'typeorm';
 
-import { Base, ListChunk } from '../Base';
+import { Base, BaseFilter, InputData, ListChunk } from '../Base';
 
 @Entity()
 export class EpidemicAreaDaily extends Base {
@@ -49,35 +49,6 @@ export class EpidemicAreaDaily extends Base {
     @Column({ nullable: true })
     provinceZipCode?: string;
 
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    @Column('integer', { nullable: true })
-    provinceConfirmedCount?: number;
-
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    @Column('integer', { nullable: true })
-    provinceSuspectedCount?: number;
-
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    @Column('integer', { nullable: true })
-    provinceCuredCount?: number;
-
-    @IsInt()
-    @Min(0)
-    @IsOptional()
-    @Column('integer', { nullable: true })
-    provinceDeadCount?: number;
-
-    @IsDateString()
-    @IsOptional()
-    @Column('date', { nullable: true })
-    updateTime?: string;
-
     @IsString()
     @IsOptional()
     @Column({ nullable: true })
@@ -97,25 +68,59 @@ export class EpidemicAreaDaily extends Base {
     @Min(0)
     @IsOptional()
     @Column('integer', { nullable: true })
-    cityConfirmedCount?: number;
+    confirmedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
     @Column('integer', { nullable: true })
-    citySuspectedCount?: number;
+    suspectedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
     @Column('integer', { nullable: true })
-    cityCuredCount?: number;
+    curedCount?: number;
 
     @IsInt()
     @Min(0)
     @IsOptional()
     @Column('integer', { nullable: true })
-    cityDeadCount?: number;
+    deadCount?: number;
+
+    @IsDateString()
+    @IsOptional()
+    @Column('date', { nullable: true })
+    updateTime?: string;
+}
+
+export type EpidemicAreaReport = Pick<
+    EpidemicAreaDaily,
+    | 'updateTime'
+    | `${'continent' | 'country' | 'province' | 'city'}Name`
+    | `${'suspected' | 'confirmed' | 'cured' | 'dead'}Count`
+>;
+
+export class EpidemicAreaFilter extends BaseFilter implements InputData<EpidemicAreaReport> {
+    @IsDateString()
+    @IsOptional()
+    updateTime?: string;
+
+    @IsString()
+    @IsOptional()
+    continentName?: string;
+
+    @IsString()
+    @IsOptional()
+    countryName?: string;
+
+    @IsString()
+    @IsOptional()
+    provinceName?: string;
+
+    @IsString()
+    @IsOptional()
+    cityName?: string;
 }
 
 export class AreaDailyListChunk implements ListChunk<EpidemicAreaDaily> {

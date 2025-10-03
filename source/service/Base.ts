@@ -2,7 +2,7 @@ import { NotFoundError } from 'routing-controllers';
 import { FindManyOptions, FindOptionsWhere, Repository } from 'typeorm';
 import { Constructor } from 'web-utility';
 
-import { Base, BaseFilter, dataSource, ListChunk } from '../model';
+import { Base, BaseFilter, dataSource, InputData, ListChunk } from '../model';
 import { searchConditionOf } from '../utility';
 
 export class BaseService<T extends Base> {
@@ -43,8 +43,8 @@ export class BaseService<T extends Base> {
     }
 
     async getList(
-        { keywords, pageSize, pageIndex }: BaseFilter,
-        where = searchConditionOf<T>(this.searchKeys, keywords),
+        { keywords, pageSize, pageIndex, ...filter }: Partial<InputData<T>> & BaseFilter = {},
+        where = searchConditionOf<T>(this.searchKeys, keywords, filter as FindOptionsWhere<T>),
         options = { order: { updatedAt: 'DESC' } } as FindManyOptions<T>
     ) {
         const [list, count] = await this.store.findAndCount({
