@@ -9,16 +9,14 @@ import {
     QueryParams
 } from 'routing-controllers';
 import { ResponseSchema } from 'routing-controllers-openapi';
-import { Between, FindOptionsWhere } from 'typeorm';
-import { formatDate, makeDateRange } from 'web-utility';
+import { formatDate } from 'web-utility';
 
 import {
-    AreaDailyListChunk,
     BaseFilter,
     dataSource,
     EpidemicAreaDaily,
+    EpidemicAreaDailyListChunk,
     EpidemicAreaFilter,
-    EpidemicAreaReport,
     EpidemicCityMonthly,
     EpidemicCountryMonthly,
     EpidemicNews,
@@ -86,9 +84,9 @@ export class EpidemicRumorController {
     }
 }
 
-@JsonController('/epidemic/area-report')
-export class EpidemicAreaReportController {
-    dailyService = new BaseService(EpidemicAreaDaily, [
+@JsonController('/epidemic/area-daily')
+export class EpidemicAreaDailyController {
+    service = new BaseService(EpidemicAreaDaily, [
         'continentName',
         'continentEnglishName',
         'countryName',
@@ -98,39 +96,42 @@ export class EpidemicAreaReportController {
         'cityName',
         'cityEnglishName'
     ]);
-    countryMonthlyStore = dataSource.getRepository(EpidemicCountryMonthly);
-    provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
-    cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
 
     @Post()
     @Authorized(UserRole.Admin)
     @ResponseSchema(EpidemicAreaDaily)
     createOne(@Body() data: EpidemicAreaDaily) {
-        return this.dailyService.createOne(data);
+        return this.service.createOne(data);
     }
 
     @Get('/:id')
     @ResponseSchema(EpidemicAreaDaily)
     getOne(@Param('id') id: number) {
-        return this.dailyService.getOne(id);
+        return this.service.getOne(id);
     }
 
     @Get()
-    @ResponseSchema(AreaDailyListChunk)
+    @ResponseSchema(EpidemicAreaDailyListChunk)
     @OnUndefined(400)
-    async getList(@QueryParams() { updateTime, ...filter }: EpidemicAreaFilter) {
+    getList(@QueryParams() { updateTime, ...filter }: EpidemicAreaFilter) {
         if (updateTime?.match(/^\d{4}-\d{2}-\d{2}$/))
-            return this.dailyService.getList({ ...filter, updateTime });
+            return this.service.getList({ ...filter, updateTime });
+    }
+}
 
-        if (!updateTime?.match(/^\d{4}-\d{2}$/)) return;
+@JsonController('/epidemic/area-monthly')
+export class EpidemicAreaMonthlyController {
+    countryMonthlyStore = dataSource.getRepository(EpidemicCountryMonthly);
+    provinceMonthlyStore = dataSource.getRepository(EpidemicProvinceMonthly);
+    cityMonthlyStore = dataSource.getRepository(EpidemicCityMonthly);
 
-        const [start, end] = makeDateRange(updateTime),
-            { continentName, countryName, provinceName, pageSize, pageIndex } = filter;
+    @Get()
+    @ResponseSchema(EpidemicAreaDailyListChunk)
+    async getList(@QueryParams() { updateTime, ...filter }: EpidemicAreaFilter) {
+        const month = updateTime && formatDate(updateTime, 'YYYY-MM');
 
-        const where: FindOptionsWhere<EpidemicAreaReport> = {
-            ...filter,
-            updateTime: Between(formatDate(start, 'YYYY-MM-DD'), formatDate(end, 'YYYY-MM-DD'))
-        };
+        const { continentName, countryName, provinceName, pageSize, pageIndex } = filter;
+
         const store = continentName
             ? this.countryMonthlyStore
             : countryName
@@ -140,7 +141,7 @@ export class EpidemicAreaReportController {
         if (!store) return;
 
         const [list, count] = await store.findAndCount({
-            where,
+            where: { ...filter, ...(month && { month }) },
             order: { month: 'DESC' },
             skip: pageSize * (pageIndex - 1),
             take: pageSize
@@ -189,6 +190,7 @@ export class EpidemicOverallController {
 export const epidemicControllers = [
     EpidemicNewsController,
     EpidemicRumorController,
-    EpidemicAreaReportController,
+    EpidemicAreaDailyController,
+    EpidemicAreaMonthlyController,
     EpidemicOverallController
 ];

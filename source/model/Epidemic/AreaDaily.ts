@@ -123,7 +123,7 @@ export class EpidemicAreaFilter extends BaseFilter implements InputData<Epidemic
     cityName?: string;
 }
 
-export class AreaDailyListChunk implements ListChunk<EpidemicAreaDaily> {
+export class EpidemicAreaDailyListChunk implements ListChunk<EpidemicAreaDaily> {
     @IsInt()
     @Min(0)
     count: number;
