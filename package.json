@@ -22,7 +22,7 @@
         "cross-env": "^10.1.0",
         "dotenv": "^17.2.3",
         "jsonwebtoken": "^9.0.2",
-        "koa": "^3.0.1",
+        "koa": "^3.0.3",
         "koa-bodyparser": "^4.4.1",
         "koa-jwt": "^4.0.4",
         "koa-logger": "^4.0.0",
