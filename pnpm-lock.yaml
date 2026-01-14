@@ -97,8 +97,8 @@ importers:
         specifier: ^0.3.27
         version: 0.3.27(better-sqlite3@12.4.1)(pg@8.16.3)(reflect-metadata@0.2.2)(ts-node@10.9.2(@types/node@22.18.7)(typescript@5.9.2))
       undici:
-        specifier: ^7.16.0
-        version: 7.16.0
+        specifier: ^7.18.2
+        version: 7.18.2
       uuid:
         specifier: ^11.1.0
         version: 11.1.0
@@ -745,10 +745,12 @@ packages:
   '@koa/router@13.1.1':
     resolution: {integrity: sha512-JQEuMANYRVHs7lm7KY9PCIjkgJk73h4m4J+g2mkw2Vo1ugPZ17UJVqEH8F+HeAdjKz5do1OaLe7ArDz+z308gw==}
     engines: {node: '>= 18'}
+    deprecated: Please upgrade to v15 or higher. All reported bugs in this version are fixed in newer releases, dependencies have been updated, and security has been improved.
 
   '@koa/router@14.0.0':
     resolution: {integrity: sha512-LBSu5K0qAaaQcXX/0WIB9PGDevyCxxpnc1uq13vV/CgObaVxuis5hKl3Eboq/8gcb6ebnkAStW9NB/Em2eYyFA==}
     engines: {node: '>= 20'}
+    deprecated: Please upgrade to v15 or higher. All reported bugs in this version are fixed in newer releases, dependencies have been updated, and security has been improved.
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -2438,6 +2440,7 @@ packages:
   keygrip@1.1.0:
     resolution: {integrity: sha512-iYSchDJ+liQ8iwbSI2QqsQOvqv58eJCEanyJPJi+Khyu8smkcKSFUCbPwzFcL7YVtZ6eONjqRX/38caJ7QjRAQ==}
     engines: {node: '>= 0.6'}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   keyv@4.5.4:
     resolution: {integrity: sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==}
@@ -3621,8 +3624,8 @@ packages:
   undici-types@6.21.0:
     resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
 
-  undici@7.16.0:
-    resolution: {integrity: sha512-QEg3HPMll0o3t2ourKwOeUAZ159Kn9mx5pnzHRQO8+Wixmh88YdZRiIwat0iNzNNXn0yoEtXJqFpyW7eM8BV7g==}
+  undici@7.18.2:
+    resolution: {integrity: sha512-y+8YjDFzWdQlSE9N5nzKMT3g4a5UBX1HKowfdXh0uvAnTaqqwqB92Jt4UXBAeKekDs5IaDKyJFR4X1gYVCgXcw==}
     engines: {node: '>=20.18.1'}
 
   unpipe@1.0.0:
@@ -3681,6 +3684,7 @@ packages:
 
   web-utility@4.6.1:
     resolution: {integrity: sha512-UjV8A0ELm0Dxmar4mUrX4WekHIJFeg67cWZU8pCO1rvB5l/6YBzrWrmRWxh/HdH3lrrjs+0EJ98XUkDGGjWqDg==}
+    deprecated: Don't use versions with old API & bugs
     peerDependencies:
       element-internals-polyfill: '>=1'
       typescript: '>=4.1'
@@ -8135,7 +8139,7 @@ snapshots:
 
   undici-types@6.21.0: {}
 
-  undici@7.16.0: {}
+  undici@7.18.2: {}
 
   unpipe@1.0.0: {}
 
